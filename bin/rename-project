@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+usage() {
+   echo "Rename elements in files and filenames under directory 'target_dir' 
+from 'from' to 'to'.
+"
+   echo "Usage: $0 target_dir from to"
+   echo ""
+}
+
+if [ ! $# -eq 3 ]; then
+   usage
+   exit -1
+fi
+
+dest_dir=$1
+from=$2
+to=$3
+
+echo "Starting in $PWD"
+# cd into the destination to avoid renaming the directory
+# from $from to $to if the project name matches the directory name
+cd $dest_dir
+echo "Changing to directory $dest_dir"
+
+# stream edit file contents
+find . -type f -exec sed -i -e "s/$from/$to/g" {} \;
+
+# Cleanup sed leftover backup files *-e
+find . -type f -name \*-e -exec rm {} \;
+
+# Rename filenames with the $from pattern
+for file in $(find . -type f -iname \*$from\*); do
+   echo "Renaming $file to ${file/$from/$to}"
+   mv $file ${file/$from/$to}
+done
+#find $dest_dir -type f -iname \*$from\* -exec mv {} $(echo "{}" | sed "s/$from/$to/g") \;
+#find $dest_dir -type f -iname \*$from\* -exec $(echo "{}" | sed "s/$from/$to/g") \;
+#find $dest_dir -type f -iname \*$from\* -exec echo "{}" \;
+

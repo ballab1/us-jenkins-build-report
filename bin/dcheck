@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Install clojure following instructions here: https://www.clojure.org/guides/getting_started
+# run 'dcheck' to determine out of date dependencies
+# Update file 'deps.edn' accordingly
+# Then 'run dev|bundle|etc'. See run script for details
+#
+
+# Ensure we're using the system jdk
+if [ `uname` = "Darwin" ]; then
+   JAVA_HOME=`/usr/libexec/java_home -v 10`
+   PATH=${JAVA_HOME}/bin:$PATH
+fi
+
+clojure -R:test:dev:dev-cljs:standalone:bench:rebel-clj:rebel-cljs -Sverbose -Spom $*
+#mvn versions:display-dependency-updates
+gradle useLatestVersions

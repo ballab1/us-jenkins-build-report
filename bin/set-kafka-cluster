@@ -1,0 +1,47 @@
+# Usage: source set-kafka-cluster dev|dur|hop|host [ip]|local
+
+if [ "$1" == "hop" ]; then
+   # Hopkinton cluster -- Vijay Basava  10gb Optical SLICS
+   export BOOTSTRAP_SERVERS=kafkabroker01.cec.lab.emc.com:9092,kafkabroker02.cec.lab.emc.com:9092,kafkabroker03.cec.lab.emc.com:9092
+   export ZK_HOSTS=kafkazookpr01.cec.lab.emc.com:2181,kafkazookpr02.cec.lab.emc.com:2181,kafkadbsrv01.cec.lab.emc.com:2181
+   export AVRO_HOSTS=kafkaavroschema.cec.lab.emc.com:8081
+   export KAFKA_CLUSTER=$1
+elif [ "$1" == "dur" ]; then
+   # Durham cluster -- Steve Vedell RITM0259942
+   #        broker1.cec.lab.emc.com  (10.207.113.56)
+   #        broker2.cec.lab.emc.com  (10.207.113.53)
+   #        broker3.cec.lab.emc.com  (10.207.113.55)
+   #        zookeeper.cec.lab.emc.com  (10.207.113.52)
+   #        zookeeper2.cec.lab.emc.com  (10.207.113.54)
+   #        avro-schema.cec.lab.emc.com  (10.207.113.50)
+   export BOOTSTRAP_SERVERS=broker1.cec.lab.emc.com:9092,broker2.cec.lab.emc.com:9092,broker3.cec.lab.emc.com:9092
+   export ZK_HOSTS=zookeeper.cec.lab.emc.com:2181,zookeeper2.cec.lab.emc.com:2181,broker1.cec.lab.emc.com:2181
+   export AVRO_HOSTS=avro-schema.cec.lab.emc.com
+   export KAFKA_CLUSTER=$1
+elif [ "$1" == "dev" ]; then
+   dev_cluster=10.244.102.59
+   export BOOTSTRAP_SERVERS=${dev_cluster}:9092
+   export ZK_HOSTS=${dev_cluster}:2181
+   export AVRO_HOSTS=${dev_cluster}
+   export KAFKA_CLUSTER=$1
+elif [ "$1" == "host" ]; then
+   if [ "$2" != "" ]; then
+      host_cluster=$2
+   else
+      host_cluster=192.168.9.1
+   fi
+   export BOOTSTRAP_SERVERS=${host_cluster}:9092
+   export ZK_HOSTS=${host_cluster}:2181
+   export AVRO_HOSTS=${host_cluster}
+   export KAFKA_CLUSTER=$1
+elif [ "$1" == "local" ]; then
+   export BOOTSTRAP_SERVERS=localhost:9092
+   export ZK_HOSTS=localhost:2181
+   export AVRO_HOSTS=localhost
+   export KAFKA_CLUSTER=$1
+else
+   echo ""
+   echo "Usage: source $(dirname $0)/set-kafka-cluster dev|dur|hop|host [ip]|local"
+   echo ""
+fi
+

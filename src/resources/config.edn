@@ -1,0 +1,15 @@
+{:secrets #include #join [#env HOME "/.secrets.edn"]
+ :db {:url #join ["jdbc:postgresql://" #or [#env PG_DB_NAME ^:ref [:secrets :db :db-name]]
+                  #join ["?ApplicationName=" ^:ref [:client-id]]]
+      :user #or [#env PG_USER ^:ref [:secrets :db :user]]
+      :password #or [#env PG_USER_PASSWORD ^:ref [:secrets :db :password]]}
+ :timbre-level #or [#env TIMBRE_LEVEL #profile {:dev :debug, :test :debug, :prod :info}]
+ :bootstrap-servers #env BOOTSTRAP_SERVERS
+ :topic #or [#env TOPIC "uS-core-events"]
+ :auto-commit #or [#env AUTO_COMMIT true]
+ :hb-topic #or [#env HB_TOPIC "uS-heartbeats"]
+ :client-id #or [#env CLIENT_ID "uS-core"]
+ :group-id #join [^:ref [:client-id] #profile {:dev "-cons-group-dev" :test "-cons-group-test" :prod "-cons-group"}]
+ ;:max-log-size-bytes
+ ;:max-log-files
+}
