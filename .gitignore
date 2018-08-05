@@ -1,0 +1,81 @@
+*.log
+logs/
+
+# Datascript generated DBs.
+db.*
+
+# vim backup
+*~
+
+# OS/X specific thumbnail store
+.DS_Store
+
+# stuff not willing to delete yet
+.stash/*
+
+# object code
+*.o *.so *.a 
+
+# byte code
+*.jar *.elc *.pyc *.beam
+
+# tool chain artifacts
+config.log config.status aclocal.m4 Makefile.in config.h
+
+# Erlang local db instances
+Mnesia.*/*
+
+# Clojure lein repl 
+*.nrepl-*
+*.lein-*
+figwheel_server.log
+
+# Maven
+target/*
+dependency-reduced-pom.xml
+
+# Clojurescript:vim-fireplace
+out/*
+
+# Clojurescript rhino repl generated files
+.cljs_rhino_repl/*
+
+# MQTT name generation
+*/.lck
+
+# pgsql database dumps.
+*.zip
+*.dump
+
+# history files
+.orientdb_history
+.rebel_readline_history
+
+# vagrant vms
+.vagrant/
+
+# ansible tries
+*.retry
+
+# clojure tools.deps.alpha
+.cpcache
+.repl-port
+pom.xml
+
+# sonarqube
+.scannerwork
+
+# node_modules
+node_modules
+
+# gradle
+.gradle
+# Credentials for gradle to use Maven Authentication for Datomic Pro repo.
+gradle.properties
+
+# run script generated
+build/
+deploy/
+.revision
+.app-name
+**/version.edn

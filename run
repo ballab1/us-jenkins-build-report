@@ -1,0 +1,181 @@
+#!/usr/bin/env bash
+
+jenv() {
+   if [ `uname` = "Darwin" ]; then
+      open_jdk_home=$(find ~/tools/jdk-* -type d -name bin)
+      if [ "$open_jdk_home" ]; then
+         JAVA_HOME=$(dirname $open_jdk_home)
+      else
+         JAVA_HOME=`/usr/libexec/java_home -v 10`
+      fi
+   elif [ `uname` = "FreeBSD" ]; then
+      JAVA_VERSION=1.8
+   fi
+}
+
+# brew install coreutils
+function random_unused_port {
+   if [ `uname` = "Darwin" ]; then
+      shuffle=gshuf
+      ns_options='-f inet -p tcp'
+   else
+      shuffle=shuf
+      ns_options='--tcp'
+   fi
+   if [ `uname` = "FreeBSD" ]; then
+      ns_options='-f inet -p tcp'
+   fi
+   (netstat -lan $ns_options |
+    sed '1,2d; s/[^[:space:]]*[[:space:]]*[^[:space:]]*[[:space:]]*[^[:space:]]*[[:space:]]*[^[:space:]]*:\([0-9]*\)[[:space:]]*.*/\1/g' |
+    sort -n | uniq; seq 1 1000; seq 1 65535
+    ) | sort -n | uniq -u | $shuffle -n 2
+ }
+
+set_repl_ports() {
+   # turn string into an array using \n as a delimiter
+   OPEN_PORTS=($(random_unused_port))
+   # export for init-cider.clj
+   export NREPL_PORT=${OPEN_PORTS[0]}
+   REPL_PORT=${OPEN_PORTS[1]}
+   echo $NREPL_PORT > .nrepl-port  # vim-fireplace
+   echo $REPL_PORT > .repl-port    # repl
+}
+
+set_revision() {
+   # Only change revision if we have git available.
+   # Assume no git available in a container. 
+   # Container will have .revision & .app-name copied in.
+   if type -p "git" > /dev/null; then
+      git describe --tags --dirty > .revision
+      # If git exited with an issue create a tag automatically
+      if [ $? != 0 ]; then
+         if [ -d .git ]; then
+            echo "Auto creating tag v0.0 on first commit."
+            git tag v0.0 $(git rev-list --max-parents=0 HEAD)
+            # Try again
+            set_revision
+         else
+            echo "No git repository, revision set to 'No-Git'!"
+            echo "No-Git" > .revision
+         fi
+      fi
+      APP=${PWD##*/}
+      echo ${APP} > .app-name
+   fi
+   get_revision
+}
+
+get_revision() {
+   REVISION=$(cat .revision)
+   APP=$(cat .app-name)
+   FQ_APP="${OUT_DIR}/${APP}-${REVISION}.jar"
+   RUN_JAR="java -jar ${FQ_APP}"
+}
+
+# If this script is sourced skip the rest and return
+[ "$0" = "$BASH_SOURCE" ] && v=run || return 0;
+
+# override maven output directory 'target' & gradle ouput directory 'build/libs'
+OUT_DIR=deploy
+set_revision
+
+jdk_ops='-J-XX:+IgnoreUnrecognizedVMOptions -J--add-modules=java.xml.bind,java.xml.ws'
+
+if [ "$1" == "host" ]; then 
+   # See docker --env HOST_IP="a.b.c.d"
+   source bin/set-kafka-cluster host $2
+   bin/validate-kafka-env
+   ${RUN_JAR}
+elif [ "$1" == "dev" ]; then
+   jenv; java -version
+   set_repl_ports
+   source bin/set-kafka-cluster local
+   bin/validate-kafka-env
+   # Debug interactively against a production configuration. Check config.edn.
+   #export CONFIG_PROFILE=':prod'; export TIMBRE_LEVEL=':debug'
+   export RUN_DEV_MODE=true
+   repl=-J-Dclojure.server.repl="{:port ${REPL_PORT} :accept clojure.core.server/repl}"
+   nrepl="-J-Dnrepl.port=${NREPL_PORT}"
+   aliases=:dev:test
+   if [ "$2" == "jar" ]; then
+      if [ -f ${FQ_APP} ]; then
+         ${RUN_JAR}
+      else
+         ./run bundle
+         ./run dev jar
+      fi
+   elif [ "$2" == "itest" ]; then
+     # In a shell 'run dev jar' & in another shell 'run itest' to interactively test drive the jar with vim.
+     clj $jdk_ops "$repl" $nrepl -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m msa.core-test
+   elif [ "$2" == "repl" ]; then
+     # will include $CP/user.clj automatically
+     clj $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -r
+   elif [ "$2" == "nrepl" ]; then
+     # will include $CP/user.clj automatically. https://nrepl.readthedocs.io/en/latest/usage
+     clj $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -m nrepl.cmdline --interactive --color
+   elif [ "$2" == "rebl" ]; then
+     # use clojure since clj uses rlwrap. rebel-readline does not include $CP/user.clj. 
+     # Use -i explicitly but be sure to use (ns user) in -i script. Cannot use clojure "slim" classifier.
+     clojure $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -i src/dev/clj/user.clj -m rebel-readline.main
+   else 
+     # will include $CP/user.clj automatically
+     clj $jdk_ops "$repl" $nrepl -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m msa.core
+   fi
+elif [ "$1" == "bundle" ]; then
+   jenv; java -version
+   # Remove dependencies on development jars
+   touch deps.edn
+   clojure -Sverbose -Spom $*
+   if [ "$2" == "mvn" ]; then 
+      # 'auto merge' mvn plugins into the generated pom.xml. Only add clojure-maven-plugin xml when not present in pom.xml
+      grep -q '^[ \t]*<artifactId>clojure-maven-plugin</artifactId>' pom.xml || sed -i -e '/<sourceDirectory>src\/main\/clj<\/sourceDirectory>/r src/dev/mvn-plug-res.xml' pom.xml 
+      [ -f pom.xml ] && rm pom.xml-e
+      mvn package
+   else 
+      gradle shadowJar
+   fi
+   tar -cf `sed s/.jar$/.tar/g <<<${FQ_APP}` bin run ${FQ_APP}
+elif [ "$1" == "docker" ]; then
+   if [ "$2" == "run" ]; then 
+      docker stop ${APP}
+      docker rm ${APP}
+      docker run --env-file ${DOCKER_ENV_FILE} -d --name ${APP} ${APP}:${REVISION}
+      ./run docker ls
+   elif [ "$2" == "debug" ]; then 
+      docker stop ${APP}
+      docker rm ${APP}
+      docker run --env-file ${DOCKER_ENV_FILE} -d -t -i --entrypoint /bin/sh --name ${APP} ${APP}:${REVISION}
+      ./run docker ls
+      # after 'run docker debug' completes, run 'docker attach some-id'
+   elif [ "$2" == "ls" ]; then 
+      echo "Containers..."
+      docker ps -a --filter name=${APP}
+      echo ""
+      echo "Images..."
+      docker images | grep ${APP}
+   elif [ "$2" == "clean" ]; then 
+      docker rm $(docker ps -aq --filter name=${APP})
+      docker rmi $(docker images | grep ${APP} | awk "{print \$3}")
+      ./run docker ls
+   elif [ "$2" == "scrub" ]; then 
+      ./run docker clean
+      docker rmi $(docker images | grep '<none>' | awk "{print \$3}")
+      docker images
+   elif [ "$#" -eq 1  ]; then 
+      ./run bundle
+      # ./run bundle above may change $REVISION, be sure to pick that up.
+      get_revision
+      docker build -t ${APP}:${REVISION} .
+   else
+      ./run usage
+   fi
+elif [ "$1" == "prod" ]; then
+   source bin/set-kafka-cluster hop
+   bin/validate-kafka-env
+   export CONFIG_PROFILE=':prod'
+   ${RUN_JAR}
+elif [ "$1" == "clean" ]; then
+   rm -rf build target deploy .cpcache .gradle .revision .app-name .nrepl-port .repl-port pom.xml dependency-reduced-pom.xml ${APP}.log logs
+else
+   echo "Usage: run clean|dev [repl|nrepl|rebl|jar|itest]|docker [run|debug|clean|ls|scrub]|bundle [mvn]|host ip|prod|nohup ./run prod &"
+fi

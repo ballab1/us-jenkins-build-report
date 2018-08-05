@@ -1,0 +1,91 @@
+;; The deps.edn file describes the information needed to build a classpath.
+;;
+;; When using the `clojure` or `clj` script, there are several deps.edn files
+;; that are combined:
+;; - install-level
+;; - user level (~/.clojure/deps.edn)
+;; - project level (current directory when invoked)
+;;
+;; For all attributes other than :paths, these config files are merged left to right.
+;; Only the last :paths is kept and others are dropped.
+
+{
+  ;; Paths
+  ;;   Directories in the current project to include in the classpath
+  :paths ["src/main/clj" "src/main/cljs" "src/resources"]
+
+  ;; External dependencies
+  :deps {
+    ;org.clojure/clojure {:mvn/version "1.9.0" :classifier "slim"}
+    ;org.clojure/clojure {:mvn/version "1.10.0-alpha6" :classifier "slim"}
+    org.clojure/clojure {:mvn/version "1.10.0-alpha6"}
+    org.clojure/core.async {:mvn/version "0.4.474"}  ; CSP
+    ;org.clojure/test.check {:mvn/version "0.9.0"}
+    org.clojure/test.check {:mvn/version "0.10.0-alpha3"}
+    ch.qos.logback/logback-classic {:mvn/version "1.2.3"}
+    com.taoensso/timbre {:mvn/version "4.10.0"}
+
+    ;; Data manipulation/compression
+    cheshire {:mvn/version "5.8.0"}
+    clojure-msgpack {:mvn/version "1.2.1"}
+    com.taoensso/nippy {:mvn/version "2.14.0"}
+    com.cognitect/transit-clj {:mvn/version "0.8.309"}
+    com.fasterxml.uuid/java-uuid-generator {:mvn/version "3.1.5"}
+
+    ;; For using a Java interface to kafka
+    ;; https://techblog.roomkey.com/index.html
+    org.apache.kafka/kafka-clients {:mvn/version "2.0.0"}
+    ;org.apache.kafka/kafka-streams {:mvn/version "2.0.0"}
+
+    ;; Web server dependencies
+    ;ring {:mvn/version "1.6.3"}
+    ;compojure {:mvn/version "1.6.0"}
+    ;org.immutant/web {:mvn/version "2.1.10"}
+    ;org.jboss.xnio/xnio-nio {:mvn/version "3.5.4.Final"} ; Required by immutant
+
+    ;; Environment & component config
+    aero {:mvn/version "1.1.3"}
+    mount {:mvn/version "0.1.12"}
+
+    ;github v3 api
+    ;tentacles {:mvn/version "0.5.1"}
+
+    ;; Database
+    org.clojure/java.jdbc {:mvn/version "0.7.7"}
+    com.zaxxer/HikariCP {:mvn/version "3.2.0"}
+    com.layerware/hugsql {:mvn/version "0.4.9"}
+    ; https://github.com/pgjdbc/pgjdbc
+    ; https://jdbc.postgresql.org/download.html
+    ; See maven pom file. Supports JDBC 4.2 and jre8+
+    org.postgresql/postgresql {:mvn/version "42.2.4"}
+    com.taoensso/carmine {:mvn/version "2.18.1"}
+    datascript {:mvn/version "0.16.6"}
+    datascript-transit {:mvn/version "0.2.2" :exclusions [com.cognitect/transit-clj]}
+    com.datomic/datomic-pro {:mvn/version "0.9.5703"}
+  }
+  ;; Aliases
+	;;   resolve-deps aliases (-R) affect dependency resolution, options:
+	;;     :extra-deps - specifies extra deps to add to :deps
+	;;     :override-deps - specifies a coordinate to use instead of that in :deps
+	;;     :default-deps - specifies a coordinate to use for a lib if one isn't found
+	;;   make-classpath aliases (-C) affect the classpath generation, options:
+	;;     :extra-paths - vector of additional paths to add to the classpath
+	;;     :classpath-overrides - map of lib to path that overrides the result of resolving deps
+
+  ;; :aliases {
+  ;;   :deps {:extra-deps {org.clojure/tools.deps.alpha {:mvn/version "0.2.196"}}}
+  ;;   :test {:extra-paths {"src/test/clj"}}
+  ;; }
+  :aliases {
+    :test {:extra-paths ["src/test/clj"]}
+  }
+
+  ;; Provider attributes
+  :mvn/repos {
+     "central" {:url "https://repo1.maven.org/maven2/"}
+     "clojars" {:url "https://clojars.org/repo"}
+     ;; To get datomic-pro. Credentials in ~/.m2/settings.xml
+     "my.datomic.com" {:url "https://my.datomic.com/repo"}
+
+  }
+}
