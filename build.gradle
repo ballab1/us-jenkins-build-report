@@ -64,6 +64,7 @@ clojure {
         elideMeta = ['doc', 'file'] // defaults to empty list
         directLinking = true // defaults to false
       }
+      // Comment out if you want to bundle jar with *.clj source instead
       aotAll() // aots any namespaces found in the source set
     }
   }

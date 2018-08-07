@@ -61,7 +61,7 @@
     com.taoensso/carmine {:mvn/version "2.18.1"}
     datascript {:mvn/version "0.16.6"}
     datascript-transit {:mvn/version "0.2.2" :exclusions [com.cognitect/transit-clj]}
-    com.datomic/datomic-pro {:mvn/version "0.9.5703"}
+    ;com.datomic/datomic-pro {:mvn/version "0.9.5703"}
   }
   ;; Aliases
 	;;   resolve-deps aliases (-R) affect dependency resolution, options:
