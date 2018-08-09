@@ -6,6 +6,8 @@
      copy this file to ~/.m2/settings.xml
      run 'clj -Spom'
      run 'mvn versions:display-dependency-updates'
+
+     For password encryption see: http://maven.apache.org/guides/mini/guide-encryption.html
 -->
 <servers>
  <server>
