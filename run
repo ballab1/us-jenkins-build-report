@@ -3,8 +3,12 @@
 jenv() {
    if [ `uname` = "Darwin" ]; then
       open_jdk_home=$(find ~/tools/jdk-* -type d -name bin)
-      if [ "$open_jdk_home" ]; then
+      GRAAL_HOME=$(find ~/tools/graalvm-ce-* -type d -name Home)
+      if [ "$GRAAL_HOME" ] && [ "$1" = "graal" ]; then
+         PATH=$GRAAL_HOME/bin:$PATH
+      elif [ "$open_jdk_home" ] && [ "$1" = "ojdk" ]; then
          JAVA_HOME=$(dirname $open_jdk_home)
+         PATH=$JAVA_HOME/bin:$PATH
       else
          JAVA_HOME=`/usr/libexec/java_home -v 10`
       fi
@@ -87,7 +91,7 @@ if [ "$1" == "host" ]; then
    bin/validate-kafka-env
    ${RUN_JAR}
 elif [ "$1" == "dev" ]; then
-   jenv; java -version
+   jenv ojdk; java -version
    set_repl_ports
    source bin/set-kafka-cluster local
    bin/validate-kafka-env
@@ -122,7 +126,7 @@ elif [ "$1" == "dev" ]; then
      clj $jdk_ops "$repl" $nrepl -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m msa.core
    fi
 elif [ "$1" == "bundle" ]; then
-   jenv; java -version
+   jenv graal; java -version
    # Remove dependencies on development jars
    touch deps.edn
    clojure -Sverbose -Spom $*
