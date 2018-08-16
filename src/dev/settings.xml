@@ -1,0 +1,79 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                          https://maven.apache.org/xsd/settings-1.0.0.xsd">
+<!--
+     copy this file to ~/.m2/settings.xml
+     run 'clj -Spom'
+     run 'mvn versions:display-dependency-updates'
+
+     For password encryption see: http://maven.apache.org/guides/mini/guide-encryption.html
+-->
+<servers>
+ <server>
+   <id>my.datomic.com</id>
+   <username>uS-core</username>
+   <password>uS-core</password>
+ </server>
+ <server>
+   <id>artifactory</id>
+   <username>your-ldap-id</username>
+   <password>your-encrypted-password</password>
+ </server>
+</servers>
+
+<profiles>
+    <profile>
+      <id>main</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <repositories>
+         <repository>
+             <id>MavenCentral</id>
+             <name>Maven repository</name>
+             <url>http://repo1.maven.org/maven2</url>
+             <releases>
+                 <enabled>true</enabled>
+             </releases>
+             <snapshots>
+                 <enabled>false</enabled>
+             </snapshots>
+         </repository>
+         <repository>
+             <id>Clojars</id>
+             <name>Clojars repository</name>
+             <url>http://clojars.org/repo/</url>
+             <releases>
+                 <enabled>true</enabled>
+             </releases>
+             <snapshots>
+                 <enabled>false</enabled>
+             </snapshots>
+         </repository>
+         <repository>
+             <id>my.datomic.com</id>
+             <name>Datomic Pro repository</name>
+             <url>https://my.datomic.com/repo/</url>
+             <releases>
+                 <enabled>true</enabled>
+             </releases>
+             <snapshots>
+                 <enabled>false</enabled>
+             </snapshots>
+         </repository>
+         <repository>
+             <id>artifactory</id>
+             <name>afeoscyc-mw.cec.lab.emc.com</name>
+             <url>https://afeoscyc-mw.cec.lab.emc.com:443/artifactory/cyclone-devops-mw</url>
+             <releases>
+                 <enabled>true</enabled>
+             </releases>
+             <snapshots>
+                 <enabled>false</enabled>
+             </snapshots>
+         </repository>
+      </repositories>
+    </profile>
+  </profiles>
+</settings>

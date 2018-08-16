@@ -45,6 +45,16 @@ set_repl_ports() {
    echo $REPL_PORT > .repl-port    # repl
 }
 
+gen_proj_pom() {
+   echo \
+"<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.dell.spe.mres</groupId>
+  <artifactId>$APP</artifactId>
+  <version>$REVISION</version>
+</project>" > ${FQ_APP_NS}.pom
+}
+
 set_revision() {
    # Only change revision if we have git available.
    # Assume no git available in a container. 
@@ -72,7 +82,8 @@ set_revision() {
 get_revision() {
    REVISION=$(cat .revision)
    APP=$(cat .app-name)
-   FQ_APP="${OUT_DIR}/${APP}-${REVISION}.jar"
+   FQ_APP_NS="${OUT_DIR}/${APP}-${REVISION}"
+   FQ_APP="${FQ_APP_NS}.jar"
    RUN_JAR="java -jar ${FQ_APP}"
 }
 
@@ -138,7 +149,8 @@ elif [ "$1" == "bundle" ]; then
    else 
       gradle shadowJar
    fi
-   tar -cf `sed s/.jar$/.tar/g <<<${FQ_APP}` bin run ${FQ_APP}
+   gen_proj_pom
+   tar -cf `sed s/.jar$/.tar/g <<<${FQ_APP}` bin run ${FQ_APP_NS}.pom ${FQ_APP}
 elif [ "$1" == "docker" ]; then
    if [ "$2" == "run" ]; then 
       docker stop ${APP}

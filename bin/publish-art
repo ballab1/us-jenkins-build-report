@@ -1,36 +1,41 @@
 #!/bin/bash
  
-declare ARTIFACTORYUSER=svc_cyclonebuild
-declare ARTIFACTORYPASSWORD=AP3NTbQYjxrPAiau4ABRiWcFiy4cAqxseJKimx
+source ~/.artifactory-creds
  
-function uploadFile()
+ORG_ID="com/dell/spe/mres"
+ARTIFACT_ID="$(cat .app-name)"
+REVISION=$(cat .revision)
+
+function publish_art()
 {
     local -r target="${1:?}"
- 
-    local file="$(basename "$target")"
- 
-    #local md5Value="$(md5sum "$file")"
-    local md5Value="$(md5 -q "$file")"
+    local file="deploy/$(basename "$target")"
+      
+    if [ `uname` = "Darwin" ]; then
+      local md5Value="$(md5 -q "$file")"
+      local sha1Value="$(shasum "$file")"
+    else
+      local md5Value="$(md5sum "$file")"
+      local sha1Value="$(sha1sum "$file")"
+    fi
+
     md5Value="${md5Value:0:32}"
-    #local sha1Value="$(sha1sum "$file")"
-    local sha1Value="$(shasum "$file")"
     sha1Value="${sha1Value:0:40}"
    
-    local -r
-    url="https://afeoscyc-mw.cec.lab.emc.com/artifactory/cyclone-devops-mw/$target"
+    local -r url="https://afeoscyc-mw.cec.lab.emc.com/artifactory/cyclone-devops-mw/$target"
    
     echo "INFO: Uploading $file to $url"
     curl -k -X PUT -u $ARTIFACTORYUSER:$ARTIFACTORYPASSWORD \
          -H "X-Checksum-Md5: $md5Value" \
-        -H "X-Checksum-Sha1: $sha1Value" \
+         -H "X-Checksum-Sha1: $sha1Value" \
          -T "$file" \
          $url
 }
  
- 
-uploadFile 'libs/jvm/uS-lib-v0.0-2-g7fbe551.jar'
+publish_art "$ORG_ID/$ARTIFACT_ID/$REVISION/$ARTIFACT_ID-$REVISION.jar"
+publish_art "$ORG_ID/$ARTIFACT_ID/$REVISION/$ARTIFACT_ID-$REVISION.pom"
 
 # To retrieve manually:
-#     curl -u hendrr2 https://afeoscyc-mw.cec.lab.emc.com/artifactory/cyclone-devops-mw/libs/jvm/uS-lib-v0.0-2-g7fbe551.jar -o nep.jar
+#     curl -u hendrr2 https://afeoscyc-mw.cec.lab.emc.com/artifactory/cyclone-devops-mw/com/dell/spe/mres/uS-lib/v0.0-5-g503e219/uS-lib-v0.0-5-g503e219.jar -o nep.jar
 #        OR
-#     curl -u hendrr2:password https://afeoscyc-mw.cec.lab.emc.com/artifactory/cyclone-devops-mw/libs/jvm/uS-lib-v0.0-2-g7fbe551.jar -o nep.jar
+#     curl -u hendrr2:password https://afeoscyc-mw.cec.lab.emc.com/artifactory/cyclone-devops-mw/com/dell/spe/mres/uS-lib/v0.0-5-g503e219/uS-lib-v0.0-5-g503e219.jar -o nep.jar
