@@ -6,6 +6,7 @@ jenv() {
       GRAAL_HOME=$(find ~/tools/graalvm-ce-* -type d -name Home)
       if [ "$GRAAL_HOME" ] && [ "$1" = "graal" ]; then
          PATH=$GRAAL_HOME/bin:$PATH
+         JAVA_HOME=$GRAAL_HOME
       elif [ "$open_jdk_home" ] && [ "$1" = "ojdk" ]; then
          JAVA_HOME=$(dirname $open_jdk_home)
          PATH=$JAVA_HOME/bin:$PATH
@@ -147,7 +148,8 @@ elif [ "$1" == "bundle" ]; then
       [ -f pom.xml ] && rm pom.xml-e
       mvn package
    else 
-      gradle shadowJar
+      # run gradle with the JDK selected by this script.
+      gradle -Dorg.gradle.java.home=$JAVA_HOME shadowJar
    fi
    gen_proj_pom
    tar -cf `sed s/.jar$/.tar/g <<<${FQ_APP}` bin run ${FQ_APP_NS}.pom ${FQ_APP}
