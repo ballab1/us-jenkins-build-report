@@ -1,5 +1,10 @@
 #!/bin/bash
- 
+
+# BEFORE EXECUTING this script, create and 'chmod go-rwx'
+# ~/.artifactory-creds. This file will need to contain:
+# declare ARTIFACTORYUSER=your-art-login
+# declare ARTIFACTORYPASSWORD=your-art-password
+
 source ~/.artifactory-creds
  
 ORG_ID="com/dell/spe/mres"
