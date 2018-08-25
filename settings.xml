@@ -10,14 +10,16 @@
      For password encryption see: http://maven.apache.org/guides/mini/guide-encryption.html
 -->
 <servers>
+ <!-- Authentication required when pulling the datomic pro jar -->
  <server>
    <id>my.datomic.com</id>
    <username>uS-core</username>
    <password>uS-core</password>
  </server>
+ <!-- Only required when publishing to artifactory using maven -->
  <server>
    <id>artifactory</id>
-   <username>your-ldap-id</username>
+   <username>your-corporate-id</username>
    <password>your-encrypted-password</password>
  </server>
 </servers>
