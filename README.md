@@ -122,6 +122,7 @@ credentials section in build.gradle in the 'artifactory' section under
 as follows
    - artUser=your-corporate-id
    - artPassword=your-UNENCRYPTED-password
+
 Be sure to 'chmod go-rwx' gradle.properties and be sure to *NOT* check this file
 into source control.
 
