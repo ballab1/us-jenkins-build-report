@@ -119,7 +119,7 @@ section. Also, 'chmod go-rwx' ~/.m2/settings.xml.
 If you intend to publish to artifactory using gradle, uncomment the
 credentials section in build.gradle in the 'artifactory' section under
 'repositories'. Next provide a gradle.properties file with your credentials 
-as follows
+as follows:
    - artUser=your-corporate-id
    - artPassword=your-UNENCRYPTED-password
 
