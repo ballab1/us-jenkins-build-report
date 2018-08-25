@@ -10,6 +10,7 @@
      For password encryption see: http://maven.apache.org/guides/mini/guide-encryption.html
 -->
 <servers>
+ <!-- Only required when publishing to artifactory using maven -->
  <server>
    <id>artifactory</id>
    <username>your-corporate-id</username>
