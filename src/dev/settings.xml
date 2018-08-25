@@ -11,13 +11,8 @@
 -->
 <servers>
  <server>
-   <id>my.datomic.com</id>
-   <username>uS-core</username>
-   <password>uS-core</password>
- </server>
- <server>
    <id>artifactory</id>
-   <username>your-ldap-id</username>
+   <username>your-corporate-id</username>
    <password>your-encrypted-password</password>
  </server>
 </servers>
@@ -44,17 +39,6 @@
              <id>Clojars</id>
              <name>Clojars repository</name>
              <url>http://clojars.org/repo/</url>
-             <releases>
-                 <enabled>true</enabled>
-             </releases>
-             <snapshots>
-                 <enabled>false</enabled>
-             </snapshots>
-         </repository>
-         <repository>
-             <id>my.datomic.com</id>
-             <name>Datomic Pro repository</name>
-             <url>https://my.datomic.com/repo/</url>
              <releases>
                  <enabled>true</enabled>
              </releases>

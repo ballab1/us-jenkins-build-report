@@ -1,17 +1,25 @@
 #! /bin/echo Please-source
 
 function jenv() {
-   if [ `uname` = "Darwin" ]; then
+   uname=$(uname)
+   if [ $uname = "Darwin" ] || [ $uname = "Linux" ]; then
       open_jdk_home=$(find ~/tools/jdk-* -type d -name bin)
-      GRAAL_HOME=$(find ~/tools/graalvm-ce-* -type d -name Home)
-      if [ "$GRAAL_HOME" ] && [ "$1" = "graal" ]; then
-         PATH=$GRAAL_HOME/bin:$PATH
-         JAVA_HOME=$GRAAL_HOME
-      elif [ "$open_jdk_home" ] && [ "$1" = "ojdk" ]; then
+      if [ $uname = "Darwin" ]; then
+         graal_home=$(find ~/tools/graalvm-ce-* -type d -name Home)
+      else
+         graal_home=$(find ~/tools/graalvm-ce-* -type d -name jre)
+      fi
+      if [ $graal_home ] && [ $1 = "graal" ]; then
+         PATH=$graal_home/bin:$PATH
+         JAVA_HOME=$graal_home
+      elif [ $open_jdk_home ] && [ $1 = "ojdk" ]; then
          JAVA_HOME=$(dirname $open_jdk_home)
          PATH=$JAVA_HOME/bin:$PATH
-      else
+      elif [ $uname = "Darwin" ]; then
          JAVA_HOME=`/usr/libexec/java_home -v 10`
+      elif [ $uname = "Linux" ]; then
+         sys_java=$(readlink -e $(which java))
+         JAVA_HOME=${sys_java%/bin/java}
       fi
    elif [ `uname` = "FreeBSD" ]; then
       JAVA_VERSION=1.8

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+uname=$(uname)
+if [ $uname = "Darwin" ]; then
+   brew install clojure
+elif [ $uname = "Linux" ]; then
+   clj_revision=1.9.0.391
+   curl -O https://download.clojure.org/install/linux-install-${clj_revision}.sh
+   chmod +x linux-install-${clj_revision}.sh
+   sudo ./linux-install-${clj_revision}.sh
+fi

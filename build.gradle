@@ -16,7 +16,7 @@ group = 'org.sample'
 // Readlines returns an array of lines. Pick first line.
 version = new File('./.revision').readLines('UTF-8')[0]
 
-description = 'uS-lib: write description'
+description = 'uS-lib: Kafka consumer and producer library to be used by clojure uServices'
 
 // https://github.com/gradle-clojure/gradle-clojure/blob/master/docs/README.md#clojure-that-depends-on-java
 sourceSets {
@@ -78,17 +78,6 @@ repositories {
     maven {
        name = 'clojars'
        url = 'https://clojars.org/repo/'
-    }
-
-    maven {
-       name = 'my.datomic.com'
-       url = 'https://my.datomic.com/repo/'
-
-       // Provide credential values in gradle.properties.
-       credentials {
-          username = "$datomicUser"
-          password = "$datomicPassword"
-       }
     }
 
     flatDir {

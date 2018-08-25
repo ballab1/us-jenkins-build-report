@@ -1,10 +1,12 @@
 # Kafka uS-lib events consumer
-uS-lib consumer microservice consuming JSON messages from Kafka inserting them into a sink database.
+uS-lib consumer/producer library jar used by microservices consuming JSON messages from Kafka inserting them into a sink database.
 
 ## Clojure
 ### Installation
 Follow instructions on how to install Clojure for your platform here (trivial):
    https://clojure.org/guides/getting_started
+
+Or simply run './bin/install-clojure' to install clojure on either OSX or Linux.
 
 To enable interactive development:
    - run 'cp src/dev/deps.edn to ${HOME}/.clojure/deps.edn'
@@ -59,17 +61,15 @@ in your $PATH.
 To consume jars from Artifactory (e.g. deps.edn) you need to complete the following steps:
    - Install the artifactory certificate in the cacerts file of your JDK.
       - See comments in script bin/add-cert-java for details.
-   - Embed your artifactory credentials in ~/.m2/settings.xml
-      - See the artifactory server section in src/dev/settings.xml for details.
    - Augment ~/.m2/settings.xml with artifactory repo details
       - See the artifactory repository section in src/dev/settings.xml for details.
 
 If you have no ~/.m2/settings.xml file, simply copy src/dev/settings.xml to
-~/.m2 and update the artifactory server section with your actual artifactory 
-credentials. Else simply merge the artifactory server and repository sections 
-into your existing ~/.m2/settings file. In either case, be sure to read and 
-follow the instructions described in the password encryption URL referenced in 
-the comments right above the server section. Also, chmod go-rwx ~/.m2/settings.xml.
+~/.m2. If you intend to publish to artifactory using maven, update the artifactory 
+server section with your actual artifactory credentials. See section 
+"Publish to Artifactory" below. Else simply merge the artifactory server
+(only when publishing using maven) and repository sections into your existing 
+~/.m2/settings file. 
 
 ## Packaging for production
 Packaging will require a pom.xml file. Generate one manually by running 
@@ -77,12 +77,11 @@ Packaging will require a pom.xml file. Generate one manually by running
 automatically. See 'Updating dependencies'. Choose one of the following 
 methods to package for production:
 
-- run 'run bundle' to generate a jar in the deploy directory using gradle
-- run 'run bundle mvn' to generate a jar in the deploy directory using maven
-- See Dockerfile on how to build a production container
+- 'run bundle' to generate a jar in the deploy directory using gradle
+- 'run bundle mvn' to generate a jar in the deploy directory using maven
 
-### Versioning of jars|containers and repo tags
-Jars and docker containers are automatically versioned based on a tag combined 
+### Versioning of jars and repo tags
+Jars are automatically versioned based on a tag combined 
 with a git revision resulting from 'git describe --tag --dirty'. Hence, your 
 repo requires at least one tag. If your cloned repo does not contain a tag, 
 create a tag at the first commit using 'git tag v0.0 sha-first-commit'. Be sure 
@@ -94,26 +93,39 @@ are not working in a git repo/workspace, a 'No-Git' pseudo tag will be
 generated for you on the first 'run'.
 
 ### Install Packaging Tools
-To create jars and/or docker containers either gradle or maven needs to be intalled.
+To create library jars either gradle or maven needs to be intalled.
 Use your package manager to install either. To install gradle manually, 
 visit https://services.gradle.org/distributions and dowload the
 latest version [-bin|-all] and unzip. Ensure gradle's bin directory is in your $PATH.
 To install maven manually, visit https://maven.apache.org/download.cgi and
 download the latest version and un[zip|tar]. Ensure apache-maven's bin directory is
-in your $PATH. To use/install Docker on Windows or Mac see
-https://www.docker.com/products/docker-desktop. On linux, consult your
-distro's Docker documentation.
+in your $PATH. 
 
 ### Publish to Artifactory
 If you need to publish the final library jar and/or executable uberjar to artifactory,
-simply run 'bin/publish-art' after you've built the production jar using 'run
-bundle' and have tested the jar using 'run dev jar | bunyan'. Before publishing 
+the simplest approach is to run 'bin/publish-art'. You should have built the production jar 
+using 'run bundle' and have tested the jar using 'run dev jar | bunyan'. Before publishing 
 to Artifactory you need to have setup your artifactory credentials in 
-~/.artifactory-creds. Be sure to 'chmod go-rwx' this file. See 'bin/publish-art' 
-for details.
+~/.artifactory-creds. Your artifactory credentials are most likely your corporate 
+credentials. Be sure to 'chmod go-rwx' this file. See 'bin/publish-art' for details. 
+
+If you intend to publish to artifactory using maven, update the artifactory 
+server section with your actual artifactory credentials in ~/.m2/settings.xml. See
+src/dev/settings.xml for details. If you put your credentials in ~/.m2/settings.xml 
+be sure to read and follow the instructions described in the 
+*password encryption* URL referenced in the comments right above the server 
+section. Also, 'chmod go-rwx' ~/.m2/settings.xml.
+
+If you intend to publish to artifactory using gradle, uncomment the
+credentials section in build.gradle in the 'artifactory' section under
+'repositories'. Next provide a gradle.properties file with your credentials 
+as follows
+   - artUser=your-corporate-id
+   - artPassword=your-UNENCRYPTED-password
+Be sure to 'chmod go-rwx' gradle.properties and be sure to *NOT* check this file
+into source control.
 
 ## Invocation
-Select one of the methods below to start the micro service
-   - run 'run dev [jar]|prod'
-   - See Dockerfile on how to run the docker container
+To develop and work on the micro service (uS) jar:
+   - 'run dev [jar] | bunyan'
 

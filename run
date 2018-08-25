@@ -69,11 +69,21 @@ elif [ "$1" == "bundle" ]; then
    tar -cf `sed s/.jar$/.tar/g <<<${FQ_APP}` bin run ${FQ_APP_NS}.pom ${FQ_APP}
 elif [ "$1" == "docker" ]; then
    if [ "$2" == "run" ]; then 
+      if [ ! $DOCKER_ENV_FILE ] ;then
+         echo "Please set DOCKER_ENV_FILE environment variable before invoking \"./run docker run\" command."
+         echo "  e.g.: export DOCKER_ENV_FILE=~/.secrets (chmod go-rwx)"
+         exit -1
+      fi
       docker stop ${APP}
       docker rm ${APP}
       docker run --env-file ${DOCKER_ENV_FILE} -d --name ${APP} ${APP}:${REVISION}
       ./run docker ls
    elif [ "$2" == "debug" ]; then 
+      if [ ! $DOCKER_ENV_FILE ] ;then
+         echo "Please set DOCKER_ENV_FILE environment variable before invoking \"./run docker debug\" command."
+         echo "  e.g.: export DOCKER_ENV_FILE=~/.secrets (chmod go-rwx)"
+         exit -1
+      fi
       docker stop ${APP}
       docker rm ${APP}
       docker run --env-file ${DOCKER_ENV_FILE} -d -t -i --entrypoint /bin/sh --name ${APP} ${APP}:${REVISION}

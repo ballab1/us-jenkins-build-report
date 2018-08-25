@@ -41,6 +41,6 @@ publish_art "$ORG_ID/$ARTIFACT_ID/$REVISION/$ARTIFACT_ID-$REVISION.jar"
 publish_art "$ORG_ID/$ARTIFACT_ID/$REVISION/$ARTIFACT_ID-$REVISION.pom"
 
 # To retrieve manually:
-#     curl -u hendrr2 https://afeoscyc-mw.cec.lab.emc.com/artifactory/cyclone-devops-mw/com/dell/spe/mres/uS-lib/v0.0-5-g503e219/uS-lib-v0.0-5-g503e219.jar -o nep.jar
-#        OR
-#     curl -u hendrr2:password https://afeoscyc-mw.cec.lab.emc.com/artifactory/cyclone-devops-mw/com/dell/spe/mres/uS-lib/v0.0-5-g503e219/uS-lib-v0.0-5-g503e219.jar -o nep.jar
+#     curl -u corp-id https://afeoscyc-mw.cec.lab.emc.com/artifactory/cyclone-devops-mw/com/dell/spe/mres/uS-lib/v0.0-5-g503e219/uS-lib-v0.0-5-g503e219.jar -o some.jar
+#           OR
+#     curl -u corp-id:password https://afeoscyc-mw.cec.lab.emc.com/artifactory/cyclone-devops-mw/com/dell/spe/mres/uS-lib/v0.0-5-g503e219/uS-lib-v0.0-5-g503e219.jar -o some.jar
