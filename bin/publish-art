@@ -10,6 +10,7 @@ source ~/.artifactory-creds
 ORG_ID="com/dell/spe/mres"
 ARTIFACT_ID="$(cat .app-name)"
 REVISION=$(cat .revision)
+QUALIFIER=$1
 
 function publish_art()
 {
@@ -36,8 +37,13 @@ function publish_art()
          -T "$file" \
          $url
 }
- 
-publish_art "$ORG_ID/$ARTIFACT_ID/$REVISION/$ARTIFACT_ID-$REVISION.jar"
+
+if [ $QUALIFIER ]; then
+   publish_art "$ORG_ID/$ARTIFACT_ID/$REVISION/$ARTIFACT_ID-$REVISION-$QUALIFIER.jar"
+else
+   publish_art "$ORG_ID/$ARTIFACT_ID/$REVISION/$ARTIFACT_ID-$REVISION.jar"
+fi
+
 publish_art "$ORG_ID/$ARTIFACT_ID/$REVISION/$ARTIFACT_ID-$REVISION.pom"
 
 # To retrieve manually:

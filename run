@@ -11,56 +11,85 @@ set_revision
 
 jdk_ops='-J-XX:+IgnoreUnrecognizedVMOptions -J--add-modules=java.xml.bind,java.xml.ws'
 
-if [ "$1" == "host" ]; then 
+function run_cmd() {
+   repl=-J-Dclojure.server.repl="{:port ${REPL_PORT} :accept clojure.core.server/repl}"
+   nrepl="-J-Dnrepl.port=${NREPL_PORT}"
+   aliases=:dev:test
+   if [ "$2" == "jar" ]; then
+      if [ -f ${FQ_APP} ]; then
+         java -jar ${FQ_APP}
+      else
+         ./run bundle
+         ./run dev jar
+      fi
+   elif [ "$1" == "itest" ]; then
+     # In a shell 'run dev jar' & in another shell 'run itest' to interactively test drive the jar with vim.
+     clj $jdk_ops "$repl" $nrepl -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m msa.core-test
+   elif [ "$1" == "repl" ]; then
+     # will include $CP/user.clj automatically
+     clj $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -r
+   elif [ "$1" == "nrepl" ]; then
+     # will include $CP/user.clj automatically. https://nrepl.readthedocs.io/en/latest/usage
+     clj $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -m nrepl.cmdline --interactive --color
+   elif [ "$1" == "rebl" ]; then
+     # use clojure since clj uses rlwrap. rebel-readline does not include $CP/user.clj. 
+     # Use -i explicitly but be sure to use (ns user) in -i script. Cannot use clojure "slim" classifier.
+     clojure $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -i src/dev/clj/user.clj -m rebel-readline.main
+   elif [ "$1" == "depstar" ]; then
+      clj -Scp ${FQ_DS_APP} -m msa.core
+      #java -cp ~/.m2/repository/org/clojure/clojure/1.9.0/clojure-1.9.0.jar:MyProject.jar msa.core
+   elif [ "$1" == "capsule" ]; then
+      java -jar ${FQ_CAPS_APP}
+   elif [ "$1" == "1jar" ]; then
+      java -jar ${FQ_1JAR_APP} -m msa.core
+   else 
+     # will include $CP/user.clj automatically
+     clj $jdk_ops "$repl" $nrepl -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m msa.core
+   fi
+}
+
+if [ "$1" == "host" ]; then
    # See docker --env HOST_IP="a.b.c.d"
    source bin/set-kafka-cluster host $2
    bin/validate-kafka-env
-   ${RUN_JAR}
+   run_cmd $3
 elif [ "$1" == "dev" ]; then
-   jenv ojdk; java -version
+   jenv graal; java -version
    set_repl_ports
    source bin/set-kafka-cluster local
    bin/validate-kafka-env
    # Debug interactively against a production configuration. Check config.edn.
    #export CONFIG_PROFILE=':prod'; export TIMBRE_LEVEL=':debug'
    export RUN_DEV_MODE=true
-   repl=-J-Dclojure.server.repl="{:port ${REPL_PORT} :accept clojure.core.server/repl}"
-   nrepl="-J-Dnrepl.port=${NREPL_PORT}"
-   aliases=:dev:test
-   if [ "$2" == "jar" ]; then
-      if [ -f ${FQ_APP} ]; then
-         ${RUN_JAR}
-      else
-         ./run bundle
-         ./run dev jar
-      fi
-   elif [ "$2" == "itest" ]; then
-     # In a shell 'run dev jar' & in another shell 'run itest' to interactively test drive the jar with vim.
-     clj $jdk_ops "$repl" $nrepl -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m msa.core-test
-   elif [ "$2" == "repl" ]; then
-     # will include $CP/user.clj automatically
-     clj $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -r
-   elif [ "$2" == "nrepl" ]; then
-     # will include $CP/user.clj automatically. https://nrepl.readthedocs.io/en/latest/usage
-     clj $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -m nrepl.cmdline --interactive --color
-   elif [ "$2" == "rebl" ]; then
-     # use clojure since clj uses rlwrap. rebel-readline does not include $CP/user.clj. 
-     # Use -i explicitly but be sure to use (ns user) in -i script. Cannot use clojure "slim" classifier.
-     clojure $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -i src/dev/clj/user.clj -m rebel-readline.main
-   else 
-     # will include $CP/user.clj automatically
-     clj $jdk_ops "$repl" $nrepl -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m msa.core
-   fi
+   run_cmd $2
+elif [ "$1" == "prod" ]; then
+   source bin/set-kafka-cluster hop
+   bin/validate-kafka-env
+   export CONFIG_PROFILE=':prod'
+   # Debug interactively against a production environment.
+   #export RUN_DEV_MODE=true; export TIMBRE_LEVEL=':debug'
+   run_cmd $2
 elif [ "$1" == "bundle" ]; then
    jenv graal; java -version
    # Remove dependencies on development jars
    touch deps.edn
    clojure -Sverbose -Spom $*
+   [ -d deploy ] || mkdir deploy
    if [ "$2" == "mvn" ]; then 
       # 'auto merge' mvn plugins into the generated pom.xml. Only add clojure-maven-plugin xml when not present in pom.xml
       grep -q '^[ \t]*<artifactId>clojure-maven-plugin</artifactId>' pom.xml || sed -i -e '/<sourceDirectory>src\/main\/clj<\/sourceDirectory>/r src/dev/mvn-plug-res.xml' pom.xml 
       [ -f pom.xml ] && rm pom.xml-e
       mvn package
+   elif [ "$2" == "depstar" ]; then
+      FQ_APP=${FQ_DS_APP}
+      clj -A:depstar -m hf.depstar.uberjar ${FQ_APP}
+   elif [ "$2" == "capsule" ]; then
+      FQ_APP=${FQ_CAPS_APP}
+      clj -A:pack mach.pack.alpha.capsule -e build-dir --application-id ${APP} --application-version $REVISION ${FQ_APP} -m msa.core
+         #-M "Built-By: $USER" -M "Build-Timestamp: $(date)" -M "JDK: $(java -version)"
+   elif [ "$2" == "1jar" ]; then
+      FQ_APP=${FQ_1JAR_APP}
+      clj -A:pack mach.pack.alpha.one-jar ${FQ_APP}
    else 
       # run gradle with the JDK selected by this script.
       gradle -Dorg.gradle.java.home=$JAVA_HOME shadowJar
@@ -111,13 +140,12 @@ elif [ "$1" == "docker" ]; then
    else
       ./run usage
    fi
-elif [ "$1" == "prod" ]; then
-   source bin/set-kafka-cluster hop
-   bin/validate-kafka-env
-   export CONFIG_PROFILE=':prod'
-   ${RUN_JAR}
 elif [ "$1" == "clean" ]; then
    rm -rf build target deploy .cpcache .gradle .revision .app-name .nrepl-port .repl-port pom.xml dependency-reduced-pom.xml ${APP}.log logs
 else
-   echo "Usage: run clean|dev [repl|nrepl|rebl|jar|itest]|docker [run|debug|clean|ls|scrub]|bundle [mvn]|host ip|prod|nohup ./run prod &"
+   echo "Usage:"
+   echo "   run clean"
+   echo "   [nohup] run host ip|dev|prod [repl|nrepl|rebl|itest|jar|depstar|capsule|1jar] [&]"
+   echo "   run bundle [mvn|depstar|capsule|1jar]"
+   echo "   run docker [run|debug|clean|ls|scrub]"
 fi

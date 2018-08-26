@@ -16,8 +16,8 @@
 
   ;; External dependencies
   :deps {
-    ;org.clojure/clojure {:mvn/version "1.9.0" :classifier "slim"}
-    org.clojure/clojure {:mvn/version "1.9.0"}
+    org.clojure/clojure {:mvn/version "1.9.0" :classifier "slim"}
+    ;org.clojure/clojure {:mvn/version "1.9.0"}
     ;org.clojure/clojure {:mvn/version "1.10.0-alpha6" :classifier "slim"}
     ;org.clojure/clojure {:mvn/version "1.10.0-alpha6"}
     org.clojure/core.async {:mvn/version "0.4.474"}  ; CSP
@@ -66,6 +66,12 @@
   ;; }
   :aliases {
     :test {:extra-paths ["src/test/clj"]}
+    :pack {:extra-deps {pack/pack.alpha {:git/url "https://github.com/juxt/pack.alpha.git"
+                                         :sha "1d455f6c591f440560c57a29e6d930004d735dcf"}}
+           :main-opts ["-m"]}
+    :depstar {:extra-deps
+                 {com.healthfinch/depstar {:git/url "https://github.com/healthfinch/depstar.git"
+                                           :sha "68f3a04f75c988fa032974e8c600c9086812e9ef"}}}
   }
 
   ;; Provider attributes

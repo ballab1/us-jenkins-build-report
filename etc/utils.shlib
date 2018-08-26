@@ -93,7 +93,9 @@ function get_revision() {
    APP=$(cat .app-name)
    FQ_APP_NS="${OUT_DIR}/${APP}-${REVISION}"
    FQ_APP="${FQ_APP_NS}.jar"
-   RUN_JAR="java -jar ${FQ_APP}"
+   FQ_DS_APP=${FQ_APP_NS}-ds.jar
+   FQ_CAPS_APP=${FQ_APP_NS}-caps.jar
+   FQ_1JAR_APP=${FQ_APP_NS}-1jar.jar
 }
 
 # vim: set ft=sh ts=3 sts=3 sw=3 tw=78 et: 

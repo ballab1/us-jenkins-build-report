@@ -1,0 +1,1 @@
+clj -Sdeps '{:deps {pack/pack.alpha {:git/url "https://github.com/juxt/pack.alpha.git" :sha "dccf2134bcf03726a9465d2b9997c42e5cd91bff"}}}' -m mach.pack.alpha.inject 1d455f6c591f440560c57a29e6d930004d735dcf
