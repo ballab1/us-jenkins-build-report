@@ -24,11 +24,7 @@ fi
 
 echo "PROJECT_NAME $proj_name"
 
-# See 'clean' target in run script
-rsync -rv --exclude=.git --exclude=build --exclude=target --exclude=deploy \
-      --exclude=.cpcache --exclude=.gradle --exclude=.revision \
-      --exclude=.app-name --exclude=.nrepl-port --exclude=.repl-port \
-      --exclude=\*pom.xml --exclude=\*.log --exclude=logs . $dest_dir
+rsync -rv --exclude=.git --exclude-from etc/generated-artifacts . $dest_dir
 
 cd $dest_dir
 

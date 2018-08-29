@@ -143,8 +143,7 @@ elif [ "$1" == "docker" ]; then
       ./run usage
    fi
 elif [ "$1" == "clean" ]; then
-   rm -rf build target .classes .manifest deploy .cpcache .gradle .revision .app-name .nrepl-port .repl-port pom.xml\
-      dependency-reduced-pom.xml ${APP}.log logs
+   rm -rf $(cat etc/generated-artifacts | sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/ /g')
 else
    echo "Usage:"
    echo "   run clean"
