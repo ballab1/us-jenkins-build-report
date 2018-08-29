@@ -91,7 +91,7 @@ function set_revision() {
 function get_revision() {
    REVISION=$(cat .revision)
    APP=$(cat .app-name)
-   FQ_APP_NS="${OUT_DIR}/${APP}-${REVISION}"
+   FQ_APP_NS="${PKG_DIR}/${APP}-${REVISION}"
    FQ_APP="${FQ_APP_NS}.jar"
    FQ_DS_APP=${FQ_APP_NS}-ds.jar
    FQ_CAPS_APP=${FQ_APP_NS}-caps.jar

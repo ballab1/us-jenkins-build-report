@@ -6,8 +6,9 @@ source etc/utils.shlib
 [ "$0" = "$BASH_SOURCE" ] && v=run || return 0;
 
 # override maven output directory 'target' & gradle ouput directory 'build/libs'
-OUT_DIR=deploy
+PKG_DIR=deploy
 set_revision
+MAIN_NS=none
 
 jdk_ops='-J-XX:+IgnoreUnrecognizedVMOptions -J--add-modules=java.xml.bind,java.xml.ws'
 
@@ -19,12 +20,12 @@ function run_cmd() {
       if [ -f ${FQ_APP} ]; then
          java -jar ${FQ_APP}
       else
-         ./run pkg
+         ./run pkg $MAIN_NS
          ./run dev jar
       fi
    elif [ "$1" == "itest" ]; then
      # In a shell 'run dev jar' & in another shell 'run itest' to interactively test drive the jar with vim.
-     clj $jdk_ops "$repl" $nrepl -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m msa.core-test
+     clj $jdk_ops "$repl" $nrepl -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m $MAIN_NS-test
    elif [ "$1" == "repl" ]; then
      # will include $CP/user.clj automatically
      clj $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -r
@@ -36,14 +37,14 @@ function run_cmd() {
      # Use -i explicitly but be sure to use (ns user) in -i script. Cannot use clojure "slim" classifier.
      clojure $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -i src/dev/clj/user.clj -m rebel-readline.main
    elif [ "$1" == "depstar" ]; then
-      clj -Scp ${FQ_DS_APP} -m msa.core
+      clj -Scp ${FQ_DS_APP} -m $MAIN_NS
    elif [ "$1" == "capsule" ]; then
       java -jar ${FQ_CAPS_APP}
    elif [ "$1" == "1jar" ]; then
-      java -jar ${FQ_1JAR_APP} -m msa.core
+      java -jar ${FQ_1JAR_APP} -m $MAIN_NS
    else
      # will include $CP/user.clj automatically
-     clj $jdk_ops "$repl" $nrepl -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m msa.core
+     clj $jdk_ops "$repl" $nrepl -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m $MAIN_NS
    fi
 }
 
@@ -73,7 +74,7 @@ elif [ "$1" == "pkg" ]; then
    # Remove dependencies on development jars
    touch deps.edn
    clojure -Sverbose -Spom $*
-   [ -d deploy ] || mkdir deploy
+   [ -d $PKG_DIR ] || mkdir $PKG_DIR
    if [ "$2" == "mvn" ]; then
       # 'auto merge' mvn plugins into the generated pom.xml. Only add clojure-maven-plugin xml when not present in pom.xml
       grep -q '^[ \t]*<artifactId>clojure-maven-plugin</artifactId>' pom.xml || sed -i -e '/<sourceDirectory>src\/main\/clj<\/sourceDirectory>/r src/dev/mvn-plug-res.xml' pom.xml
@@ -84,7 +85,7 @@ elif [ "$1" == "pkg" ]; then
       clj -A:depstar -m hf.depstar.uberjar ${FQ_APP}
    elif [ "$2" == "capsule" ]; then
       FQ_APP=${FQ_CAPS_APP}
-      clj -A:pack mach.pack.alpha.capsule -m msa.core --application-id $APP --application-version $REVISION \
+      clj -A:pack mach.pack.alpha.capsule -m $MAIN_NS --application-id $APP --application-version $REVISION \
          -M "Built-By: $USER" -M "Build-Timestamp: $(date)" -M "Build-Host: $(uname -vn)" \
          ${FQ_APP}
    elif [ "$2" == "1jar" ]; then
@@ -94,7 +95,7 @@ elif [ "$1" == "pkg" ]; then
       # run gradle with the JDK selected by this script.
       gradle -Dorg.gradle.java.home=$JAVA_HOME shadowJar
    else
-      bin/pkg
+      bin/pkg $MAIN_NS
    fi
    gen_proj_pom
    tar -cf `sed s/.jar$/.tar/g <<<${FQ_APP}` bin run ${FQ_APP_NS}.pom ${FQ_APP}
@@ -135,7 +136,7 @@ elif [ "$1" == "docker" ]; then
       docker rmi $(docker images | grep '<none>' | awk "{print \$3}")
       docker images
    elif [ "$#" -eq 1  ]; then
-      ./run pkg
+      ./run pkg $MAIN_NS
       # ./run pkg above may change $REVISION, be sure to pick that up.
       get_revision
       docker build -t ${APP}:${REVISION} .

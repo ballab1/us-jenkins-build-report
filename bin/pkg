@@ -18,64 +18,91 @@
 source etc/utils.shlib
 set_revision
 
-# Get the project's classpath
-cpath=$(clj -Spath)
-
-# Get the project's namespaces
-namespaces=()
-for file in $(find src/main/clj -name \*.clj); do
-   drop_front=${file##src/main/clj/}
-   drop_extension=${drop_front%%.clj}
-   namespaces+="${drop_extension//\//.} "
-done
-
+# Prepare env
 target_dir=.classes
 rm -rf $target_dir
 [ -d $target_dir ] || mkdir $target_dir
 
-# Find all jar files on the classpath and decompress them along side the
-# project's compiled classes. WARNING the last class decompressed overwrites
-# a previous version upon collision. Reverse process the list to match what a
-# classloader would see.
-files=(${cpath//:/ })
-cd $target_dir;
+if [ -z ${PKG_DIR} ]; then
+  PKG_DIR=deploy
+fi
 
-manifest_cp=()
-for (( i=${#files[@]}-1;i>=0;i-- )); do
-   file=${files[i]}
-   if [ -f $file ]; then
-      echo "Extracting: $file into $target_dir"
-      manifest_cp+=" ${file##*/} \n"
-      jar xf $file
-   fi
-done
+if [ -z ${MAIN_NS} ]; then
+  MAIN_NS=$1
+fi
 
-cd ..
-sorted_manifest_cp=$(printf "$manifest_cp" | sort)
+function extract_dependencies() {
+   # Find all jar files on the classpath and decompress them along side the
+   # project's compiled classes. WARNING the last class decompressed overwrites
+   # a previous version upon collision. Reverse process the list to match what a
+   # classloader would see.
+   manifest_cp=()
+   files=(${cpath//:/ })
+   cd $target_dir;
+   for (( i=${#files[@]}-1;i>=0;i-- )); do
+      file=${files[i]}
+      if [ -f $file ]; then
+         echo "Extracting: $file into $target_dir"
+         manifest_cp+=" ${file##*/} \n"
+         jar xf $file
+      fi
+   done
+   sorted_manifest_cp=$(printf "$manifest_cp" | sort)
+   cd ..
+}
 
-# Remove any file in $target_dir coming from the decompressed jars that is also
-# in src/resources as the latter will override these in the uber jar.
-for file in $(ls src/resources); do
-   find $target_dir -type f -name $file -exec rm {} \;
-done
+function create_manifest() {
+   # Create a manifest file
+   manifest=.manifest
+   echo "Title: $(cat .app-name)" > $manifest
+   echo "SCM-Revision: $(cat .revision)" >> $manifest
+   echo "Built-By: $USER" >> $manifest
+   echo "Build-Timestamp: $(date)" >> $manifest
+   echo "Build-Host: $(uname -vn)" >> $manifest
+   echo "Built-With: $0" >> $manifest
+   echo "Main-Class: ${MAIN_NS//-/_}" >> $manifest
+   echo "Class-Path: $sorted_manifest_cp" >> $manifest
+}
 
-# Create a manifest file
-manifest=.manifest
-echo "Title: $(cat .app-name)" > $manifest
-echo "SCM-Revision: $(cat .revision)" >> $manifest
-echo "Built-By: $USER" >> $manifest
-echo "Build-Timestamp: $(date)" >> $manifest
-echo "Build-Host: $(uname -vn)" >> $manifest
-echo "Built-With: $0" >> $manifest
-#echo "Main-Class: msa.core" >> $manifest
-echo "Class-Path: $sorted_manifest_cp" >> $manifest
+function package() {
+   # Remove any file in $target_dir coming from the decompressed jars that is also
+   # in src/resources as the latter will need to override these in the uber jar.
+   for file in $(ls src/resources); do
+      find $target_dir -type f -name $file -exec rm {} \;
+   done
 
-# Compile the project's namespaces like msa.core. WARNING compiled project
-# classes will overwrite decompressed jars classes upon collision.
-java -cp $target_dir:$cpath -Dclojure.compile.path=$target_dir clojure.lang.Compile $namespaces
+   # Create the project's uberjar including project class files, resources and jar class files.
+   [ -d $PKG_DIR ] || mkdir $PKG_DIR
+   jar_name="$PKG_DIR/$(cat .app-name)-$(cat .revision).jar"
+   echo "Creating $jar_name"
+   jar cmf $manifest $jar_name -C src/resources . -C $target_dir .
+}
 
-# Create the project's uberjar including project class files, resources and jar class files.
-[ -d deploy ] || mkdir deploy
-jar_name="deploy/$(cat .app-name)-$(cat .revision).jar"
-echo "Creating $jar_name"
-jar cmf $manifest $jar_name -C $target_dir . -C src/resources .
+function find_project_namespaces() {
+   # Get the project's namespaces
+   namespaces=()
+   for file in $(find src/main/clj -name \*.clj); do
+      drop_front=${file##src/main/clj/}
+      drop_extension=${drop_front%%.clj}
+      from_underscore_to_dash=${drop_extension//_/-}
+      namespaces+="${from_underscore_to_dash//\//.} "
+   done
+}
+
+function compile_and_package() {
+   printf "MAIN_NS=$MAIN_NS\nPKG_DIR=$PKG_DIR\n"
+   # Get the project's classpath
+   cpath=$(clj -Spath)
+
+   extract_dependencies
+
+   # Compile the project's namespaces like msa.core. WARNING compiled project
+   # classes will overwrite decompressed jars classes upon collision.
+   find_project_namespaces
+   java -cp $target_dir:$cpath -Dclojure.compile.path=$target_dir clojure.lang.Compile $namespaces
+
+   create_manifest
+   package
+}
+
+compile_and_package
