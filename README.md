@@ -72,13 +72,15 @@ server section with your actual artifactory credentials. See section
 ~/.m2/settings file. 
 
 ## Packaging for production
-Packaging will require a pom.xml file. Generate one manually by running 
-'bin/dcheck' if desired or let the 'run bundle' commands below generate one 
-automatically. See 'Updating dependencies'. Choose one of the following 
-methods to package for production:
+Choose one of the following methods to package for production:
 
-- 'run bundle' to generate a jar in the deploy directory using gradle
-- 'run bundle mvn' to generate a jar in the deploy directory using maven
+- 'run pkg' to generate a jar using bin/pkg
+- 'run pkg mvn' to generate a jar in the deploy directory using maven
+- 'run pkg gradle' to generate a jar in the deploy directory using gradle
+- 'run docker' to build a docker container. 'run docker' will also run 'run
+  pkg' to build an uberjar to be packaged in the container.
+   - See Dockerfile on how to build a production container
+- 'run docker run' to run the container
 
 ### Versioning of jars and repo tags
 Jars are automatically versioned based on a tag combined 
@@ -104,7 +106,7 @@ in your $PATH.
 ### Publish to Artifactory
 If you need to publish the final library jar and/or executable uberjar to artifactory,
 the simplest approach is to run 'bin/publish-art'. You should have built the production jar 
-using 'run bundle' and have tested the jar using 'run dev jar | bunyan'. Before publishing 
+using 'run pkg' and have tested the jar using 'run dev jar | bunyan'. Before publishing 
 to Artifactory you need to have setup your artifactory credentials in 
 ~/.artifactory-creds. Your artifactory credentials are most likely your corporate 
 credentials. Be sure to 'chmod go-rwx' this file. See 'bin/publish-art' for details. 

@@ -15,11 +15,11 @@ function run_cmd() {
    repl=-J-Dclojure.server.repl="{:port ${REPL_PORT} :accept clojure.core.server/repl}"
    nrepl="-J-Dnrepl.port=${NREPL_PORT}"
    aliases=:dev:test
-   if [ "$2" == "jar" ]; then
+   if [ "$1" == "jar" ]; then
       if [ -f ${FQ_APP} ]; then
          java -jar ${FQ_APP}
       else
-         ./run bundle
+         ./run pkg
          ./run dev jar
       fi
    elif [ "$1" == "itest" ]; then
@@ -32,17 +32,16 @@ function run_cmd() {
      # will include $CP/user.clj automatically. https://nrepl.readthedocs.io/en/latest/usage
      clj $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -m nrepl.cmdline --interactive --color
    elif [ "$1" == "rebl" ]; then
-     # use clojure since clj uses rlwrap. rebel-readline does not include $CP/user.clj. 
+     # use clojure since clj uses rlwrap. rebel-readline does not include $CP/user.clj.
      # Use -i explicitly but be sure to use (ns user) in -i script. Cannot use clojure "slim" classifier.
      clojure $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -i src/dev/clj/user.clj -m rebel-readline.main
    elif [ "$1" == "depstar" ]; then
       clj -Scp ${FQ_DS_APP} -m msa.core
-      #java -cp ~/.m2/repository/org/clojure/clojure/1.9.0/clojure-1.9.0.jar:MyProject.jar msa.core
    elif [ "$1" == "capsule" ]; then
       java -jar ${FQ_CAPS_APP}
    elif [ "$1" == "1jar" ]; then
       java -jar ${FQ_1JAR_APP} -m msa.core
-   else 
+   else
      # will include $CP/user.clj automatically
      clj $jdk_ops "$repl" $nrepl -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m msa.core
    fi
@@ -69,15 +68,15 @@ elif [ "$1" == "prod" ]; then
    # Debug interactively against a production environment.
    #export RUN_DEV_MODE=true; export TIMBRE_LEVEL=':debug'
    run_cmd $2
-elif [ "$1" == "bundle" ]; then
+elif [ "$1" == "pkg" ]; then
    jenv graal; java -version
    # Remove dependencies on development jars
    touch deps.edn
    clojure -Sverbose -Spom $*
    [ -d deploy ] || mkdir deploy
-   if [ "$2" == "mvn" ]; then 
+   if [ "$2" == "mvn" ]; then
       # 'auto merge' mvn plugins into the generated pom.xml. Only add clojure-maven-plugin xml when not present in pom.xml
-      grep -q '^[ \t]*<artifactId>clojure-maven-plugin</artifactId>' pom.xml || sed -i -e '/<sourceDirectory>src\/main\/clj<\/sourceDirectory>/r src/dev/mvn-plug-res.xml' pom.xml 
+      grep -q '^[ \t]*<artifactId>clojure-maven-plugin</artifactId>' pom.xml || sed -i -e '/<sourceDirectory>src\/main\/clj<\/sourceDirectory>/r src/dev/mvn-plug-res.xml' pom.xml
       [ -f pom.xml ] && rm pom.xml-e
       mvn package
    elif [ "$2" == "depstar" ]; then
@@ -85,19 +84,22 @@ elif [ "$1" == "bundle" ]; then
       clj -A:depstar -m hf.depstar.uberjar ${FQ_APP}
    elif [ "$2" == "capsule" ]; then
       FQ_APP=${FQ_CAPS_APP}
-      clj -A:pack mach.pack.alpha.capsule -e build-dir --application-id ${APP} --application-version $REVISION ${FQ_APP} -m msa.core
-         #-M "Built-By: $USER" -M "Build-Timestamp: $(date)" -M "JDK: $(java -version)"
+      clj -A:pack mach.pack.alpha.capsule -m msa.core --application-id $APP --application-version $REVISION \
+         -M "Built-By: $USER" -M "Build-Timestamp: $(date)" -M "Build-Host: $(uname -vn)" \
+         ${FQ_APP}
    elif [ "$2" == "1jar" ]; then
       FQ_APP=${FQ_1JAR_APP}
       clj -A:pack mach.pack.alpha.one-jar ${FQ_APP}
-   else 
+   elif [ "$2" == "gradle" ]; then
       # run gradle with the JDK selected by this script.
       gradle -Dorg.gradle.java.home=$JAVA_HOME shadowJar
+   else
+      bin/pkg
    fi
    gen_proj_pom
    tar -cf `sed s/.jar$/.tar/g <<<${FQ_APP}` bin run ${FQ_APP_NS}.pom ${FQ_APP}
 elif [ "$1" == "docker" ]; then
-   if [ "$2" == "run" ]; then 
+   if [ "$2" == "run" ]; then
       if [ ! $DOCKER_ENV_FILE ] ;then
          echo "Please set DOCKER_ENV_FILE environment variable before invoking \"./run docker run\" command."
          echo "  e.g.: export DOCKER_ENV_FILE=~/.secrets (chmod go-rwx)"
@@ -107,7 +109,7 @@ elif [ "$1" == "docker" ]; then
       docker rm ${APP}
       docker run --env-file ${DOCKER_ENV_FILE} -d --name ${APP} ${APP}:${REVISION}
       ./run docker ls
-   elif [ "$2" == "debug" ]; then 
+   elif [ "$2" == "debug" ]; then
       if [ ! $DOCKER_ENV_FILE ] ;then
          echo "Please set DOCKER_ENV_FILE environment variable before invoking \"./run docker debug\" command."
          echo "  e.g.: export DOCKER_ENV_FILE=~/.secrets (chmod go-rwx)"
@@ -118,34 +120,35 @@ elif [ "$1" == "docker" ]; then
       docker run --env-file ${DOCKER_ENV_FILE} -d -t -i --entrypoint /bin/sh --name ${APP} ${APP}:${REVISION}
       ./run docker ls
       # after 'run docker debug' completes, run 'docker attach some-id'
-   elif [ "$2" == "ls" ]; then 
+   elif [ "$2" == "ls" ]; then
       echo "Containers..."
       docker ps -a --filter name=${APP}
       echo ""
       echo "Images..."
       docker images | grep ${APP}
-   elif [ "$2" == "clean" ]; then 
+   elif [ "$2" == "clean" ]; then
       docker rm $(docker ps -aq --filter name=${APP})
       docker rmi $(docker images | grep ${APP} | awk "{print \$3}")
       ./run docker ls
-   elif [ "$2" == "scrub" ]; then 
+   elif [ "$2" == "scrub" ]; then
       ./run docker clean
       docker rmi $(docker images | grep '<none>' | awk "{print \$3}")
       docker images
-   elif [ "$#" -eq 1  ]; then 
-      ./run bundle
-      # ./run bundle above may change $REVISION, be sure to pick that up.
+   elif [ "$#" -eq 1  ]; then
+      ./run pkg
+      # ./run pkg above may change $REVISION, be sure to pick that up.
       get_revision
       docker build -t ${APP}:${REVISION} .
    else
       ./run usage
    fi
 elif [ "$1" == "clean" ]; then
-   rm -rf build target deploy .cpcache .gradle .revision .app-name .nrepl-port .repl-port pom.xml dependency-reduced-pom.xml ${APP}.log logs
+   rm -rf build target .classes .manifest deploy .cpcache .gradle .revision .app-name .nrepl-port .repl-port pom.xml\
+      dependency-reduced-pom.xml ${APP}.log logs
 else
    echo "Usage:"
    echo "   run clean"
    echo "   [nohup] run host ip|dev|prod [repl|nrepl|rebl|itest|jar|depstar|capsule|1jar] [&]"
-   echo "   run bundle [mvn|depstar|capsule|1jar]"
+   echo "   run pkg [mvn|gradle|depstar|capsule|1jar]"
    echo "   run docker [run|debug|clean|ls|scrub]"
 fi

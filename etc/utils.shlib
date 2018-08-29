@@ -66,7 +66,7 @@ function gen_proj_pom() {
 
 function set_revision() {
    # Only change revision if we have git available.
-   # Assume no git available in a container. 
+   # Assume no git available in a container.
    # Container will have .revision & .app-name copied in.
    if type -p "git" > /dev/null; then
       git describe --tags --dirty > .revision
@@ -98,4 +98,4 @@ function get_revision() {
    FQ_1JAR_APP=${FQ_APP_NS}-1jar.jar
 }
 
-# vim: set ft=sh ts=3 sts=3 sw=3 tw=78 et: 
+# vim: set ft=sh ts=3 sts=3 sw=3 tw=78 et:

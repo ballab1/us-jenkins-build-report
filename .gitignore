@@ -14,10 +14,11 @@ db.*
 .stash/*
 
 # object code
-*.o *.so *.a 
+*.o *.so *.a
 
 # byte code
 *.jar *.elc *.pyc *.beam
+.classes
 
 # tool chain artifacts
 config.log config.status aclocal.m4 Makefile.in config.h
@@ -25,7 +26,7 @@ config.log config.status aclocal.m4 Makefile.in config.h
 # Erlang local db instances
 Mnesia.*/*
 
-# Clojure lein repl 
+# Clojure lein repl
 *.nrepl-*
 *.lein-*
 figwheel_server.log
@@ -78,4 +79,5 @@ build/
 deploy/
 .revision
 .app-name
+.manifest
 **/version.edn

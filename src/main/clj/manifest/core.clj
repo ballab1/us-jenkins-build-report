@@ -3,7 +3,8 @@
             [clojure.string]
             [clojure.walk :as walk])
   (:import [java.util.jar Manifest]
-           [java.net URL]))
+           [java.net URL])
+  (:gen-class))
 
 (defn- join-continuations [input]
   (let [input (vec input)

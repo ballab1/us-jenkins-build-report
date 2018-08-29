@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 usage() {
-   echo "Rename elements in files and filenames under directory 'target_dir' 
+   echo "Rename elements in files and filenames under directory 'target_dir'
 from 'from' to 'to'.
 "
    echo "Usage: $0 target_dir from to"
@@ -22,6 +22,12 @@ to=$3
 from_us=${from//-/_}
 to_us=${to//-/_}
 
+# Lower case versions. Postgres creates all identifiers in lowercase
+# regardless of original mixed case name. This applies to *-table-exists?
+# function in *.sql files.
+from_us_lc=$(echo $from_us | tr '[:upper:]' '[:lower:]')
+to_us_lc=$(echo $to_us | tr '[:upper:]' '[:lower:]')
+
 echo "Starting in $PWD"
 # cd into the destination to avoid renaming the directory
 # from $from to $to if the project name matches the directory name
@@ -33,7 +39,8 @@ find . -type f -exec sed -i -e "s/$from/$to/g; s/$from_us/$to_us/g" {} \;
 
 # Find DB table references and change hyphens to underscores
 find . -type f -iname \*.clj -exec sed -E -i -e '/ conn :/ s/([a-z])-([a-z])/\1_\2/g' {} \;
-find . -type f -iname \*.sql -exec sed -E -i -e '/^[ \t]*--/! s/([a-z])-([a-z])/\1_\2/g; /^[ \t]*-- :doc/ s/([a-z])-([a-z])/\1_\2/g' {} \;
+find . -type f -iname \*.sql -exec sed -E -i -e \
+   "/^[ \t]*--/! s/([a-z])-([a-z])/\1_\2/g; /^[ \t]*-- :doc/ s/([a-z])-([a-z])/\1_\2/g; /c\.relname/ s/$from_us_lc/$to_us_lc/g" {} \;
 
 # Cleanup sed leftover backup files *-e
 find . -type f -name \*-e -exec rm {} \;
@@ -43,7 +50,3 @@ for file in $(find . -type f -iname \*$from\*); do
    echo "Renaming $file to ${file/$from/$to}"
    mv $file ${file/$from/$to}
 done
-#find $dest_dir -type f -iname \*$from\* -exec mv {} $(echo "{}" | sed "s/$from/$to/g") \;
-#find $dest_dir -type f -iname \*$from\* -exec $(echo "{}" | sed "s/$from/$to/g") \;
-#find $dest_dir -type f -iname \*$from\* -exec echo "{}" \;
-
