@@ -90,12 +90,12 @@
    (fn []
      (if-let [revision (:SCM-Revision (get-manifest))]
        revision
-       (let [result (shell/sh "git" "describe" "--tag" "--dirty")]
-          (if (= (:err result) 0)
-            (clojure.string/trim-newline (:out result))
-            (if (.exists (io/file ".revision"))
-              (if-let [revision (clojure.string/trim-newline (slurp ".revision"))]
-                (if (clojure.string/blank? revision)
-                  "No-SCM"
-                  revision))
-              "No-SCM")))))))
+       (if (.exists (io/file ".revision"))
+         (if-let [revision (clojure.string/trim-newline (slurp ".revision"))]
+           (if (clojure.string/blank? revision)
+             "No-SCM"
+             revision))
+         (let [result (shell/sh "git" "describe" "--tag" "--dirty")]
+           (if (= (:err result) 0)
+             (clojure.string/trim-newline (:out result))
+             "No-SCM")))))))
