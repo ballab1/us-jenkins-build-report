@@ -3,11 +3,11 @@
 function jenv() {
    uname=$(uname)
    if [ $uname = "Darwin" ] || [ $uname = "Linux" ]; then
-      open_jdk_home=$(find ~/tools/jdk-* -type d -name bin)
+      open_jdk_home=$(find ~/tools/jdk-* -type d -name bin 2>/dev/null)
       if [ $uname = "Darwin" ]; then
-         graal_home=$(find ~/tools/graalvm-ce-* -type d -name Home)
+         graal_home=$(find ~/tools/graalvm-ce-* -type d -name Home 2>/dev/null)
       else
-         graal_home=$(find ~/tools/graalvm-ce-* -type d -name jre)
+         graal_home=$(find ~/tools/graalvm-ce-* -type d -name jre 2>/dev/null)
       fi
       if [ $graal_home ] && [ $1 = "graal" ]; then
          PATH=$graal_home/bin:$PATH
@@ -18,7 +18,7 @@ function jenv() {
       elif [ $uname = "Darwin" ]; then
          JAVA_HOME=`/usr/libexec/java_home -v 10`
       elif [ $uname = "Linux" ]; then
-         sys_java=$(readlink -e $(which java))
+         sys_java=$(readlink -f $(which java))
          JAVA_HOME=${sys_java%/bin/java}
       fi
    elif [ `uname` = "FreeBSD" ]; then
@@ -33,7 +33,7 @@ function random_unused_port {
       ns_options='-f inet -p tcp'
    else
       shuffle=shuf
-      ns_options='--tcp'
+      ns_options='-t'
    fi
    if [ `uname` = "FreeBSD" ]; then
       ns_options='-f inet -p tcp'
@@ -96,6 +96,22 @@ function get_revision() {
    FQ_DS_APP=${FQ_APP_NS}-ds.jar
    FQ_CAPS_APP=${FQ_APP_NS}-caps.jar
    FQ_1JAR_APP=${FQ_APP_NS}-1jar.jar
+}
+
+function set_kafka_cluster() {
+   if [ -z ${KAFKA_IP} ]; then
+      source bin/set-kafka-cluster $1
+   else
+      source bin/set-kafka-cluster host $KAFKA_IP
+   fi
+}
+
+function is_docker_env_file_set() {
+   if [ ! $DOCKER_ENV_FILE ]; then
+      echo "Please set DOCKER_ENV_FILE environment variable before invoking \"./run docker run\" command."
+      echo "  e.g.: export DOCKER_ENV_FILE=~/.docker-env (chmod go-rwx)"
+      exit -1
+   fi
 }
 
 # vim: set ft=sh ts=3 sts=3 sw=3 tw=78 et:

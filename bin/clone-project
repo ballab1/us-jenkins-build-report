@@ -28,11 +28,11 @@ rsync -rv --exclude=.git --exclude-from etc/generated-artifacts . $dest_dir
 
 cd $dest_dir
 
-from=uS-core
+from=uS-lib
 to=$proj_name
 
 # Change back to original calling dir before calling
-# rename-projectj in case we have relative dir paths as args.
+# rename-project in case we have relative dir paths as args.
 cd $orig_dir
 
 # Rename contents and file names after project has been copied

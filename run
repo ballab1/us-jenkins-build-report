@@ -12,7 +12,7 @@ MAIN_NS=none
 
 jdk_ops='-J-XX:+IgnoreUnrecognizedVMOptions -J--add-modules=java.xml.bind,java.xml.ws'
 
-function run_cmd() {
+function run_clj() {
    repl=-J-Dclojure.server.repl="{:port ${REPL_PORT} :accept clojure.core.server/repl}"
    nrepl="-J-Dnrepl.port=${NREPL_PORT}"
    aliases=:dev:test
@@ -48,27 +48,22 @@ function run_cmd() {
    fi
 }
 
-if [ "$1" == "host" ]; then
-   # See docker --env HOST_IP="a.b.c.d"
-   source bin/set-kafka-cluster host $2
-   bin/validate-kafka-env
-   run_cmd $3
-elif [ "$1" == "dev" ]; then
+if [ "$1" == "dev" ]; then
    jenv graal; java -version
    set_repl_ports
-   source bin/set-kafka-cluster local
+   set_kafka_cluster localhost # Unless $KAFKA_IP is set
    bin/validate-kafka-env
    # Debug interactively against a production configuration. Check config.edn.
    #export CONFIG_PROFILE=':prod'; export TIMBRE_LEVEL=':debug'
    export RUN_DEV_MODE=true
-   run_cmd $2
+   run_clj $2
 elif [ "$1" == "prod" ]; then
-   source bin/set-kafka-cluster hop
+   set_kafka_cluster hop       # Unless $KAFKA_IP is set
    bin/validate-kafka-env
    export CONFIG_PROFILE=':prod'
    # Debug interactively against a production environment.
    #export RUN_DEV_MODE=true; export TIMBRE_LEVEL=':debug'
-   run_cmd $2
+   run_clj $2
 elif [ "$1" == "pkg" ]; then
    jenv graal; java -version
    # Remove dependencies on development jars
@@ -100,27 +95,21 @@ elif [ "$1" == "pkg" ]; then
    gen_proj_pom
    tar -cf `sed s/.jar$/.tar/g <<<${FQ_APP}` bin run ${FQ_APP_NS}.pom ${FQ_APP}
 elif [ "$1" == "docker" ]; then
+   # Repository name must be lowercase.
+   lc_app=$(echo ${APP} | tr '[:upper:]' '[:lower:]')
    if [ "$2" == "run" ]; then
-      if [ ! $DOCKER_ENV_FILE ] ;then
-         echo "Please set DOCKER_ENV_FILE environment variable before invoking \"./run docker run\" command."
-         echo "  e.g.: export DOCKER_ENV_FILE=~/.secrets (chmod go-rwx)"
-         exit -1
-      fi
+      # Optionally publish uS ports with -p port:port/tcp
+      DOCKER_PARMS="--env-file ${DOCKER_ENV_FILE} --name ${APP} ${lc_app}:${REVISION}"
+      is_docker_env_file_set
       docker stop ${APP}
       docker rm ${APP}
-      docker run --env-file ${DOCKER_ENV_FILE} -d --name ${APP} ${APP}:${REVISION}
-      ./run docker ls
-   elif [ "$2" == "debug" ]; then
-      if [ ! $DOCKER_ENV_FILE ] ;then
-         echo "Please set DOCKER_ENV_FILE environment variable before invoking \"./run docker debug\" command."
-         echo "  e.g.: export DOCKER_ENV_FILE=~/.secrets (chmod go-rwx)"
-         exit -1
+      if [ "$3" == "debug" ]; then
+         docker run -t -i --entrypoint /bin/sh $DOCKER_PARMS
+      else
+         docker run -d $DOCKER_PARMS
       fi
-      docker stop ${APP}
-      docker rm ${APP}
-      docker run --env-file ${DOCKER_ENV_FILE} -d -t -i --entrypoint /bin/sh --name ${APP} ${APP}:${REVISION}
       ./run docker ls
-      # after 'run docker debug' completes, run 'docker attach some-id'
+      # after 'run docker run' completes, run 'docker attach some-id'. Use ^p^q to exit the container.
    elif [ "$2" == "ls" ]; then
       echo "Containers..."
       docker ps -a --filter name=${APP}
@@ -135,11 +124,18 @@ elif [ "$1" == "docker" ]; then
       ./run docker clean
       docker rmi $(docker images | grep '<none>' | awk "{print \$3}")
       docker images
-   elif [ "$#" -eq 1  ]; then
-      ./run pkg $MAIN_NS
+   elif [ "$2" == "build" ]; then
+      ./run clean
+      if [ -z ${3}  ]; then
+         # Build a jar without tooling
+         ./run pkg $MAIN_NS
+      else
+         # Build a jar with capsule, 1jar, depstar, mvn or gradle
+         ./run pkg $3
+      fi
       # ./run pkg above may change $REVISION, be sure to pick that up.
       get_revision
-      docker build -t ${APP}:${REVISION} .
+      docker build -t ${lc_app}:${REVISION} .
    else
       ./run usage
    fi
@@ -148,7 +144,7 @@ elif [ "$1" == "clean" ]; then
 else
    echo "Usage:"
    echo "   run clean"
-   echo "   [nohup] run host ip|dev|prod [repl|nrepl|rebl|itest|jar|depstar|capsule|1jar] [&]"
+   echo "   [KAFKA_IP=ip] [nohup] run dev|prod [repl|nrepl|rebl|itest|jar|depstar|capsule|1jar] [&]"
    echo "   run pkg [mvn|gradle|depstar|capsule|1jar]"
-   echo "   run docker [run|debug|clean|ls|scrub]"
+   echo "   run docker build [mvn|gradle|depstar|capsule|1jar]|run [debug]|clean|ls|scrub"
 fi

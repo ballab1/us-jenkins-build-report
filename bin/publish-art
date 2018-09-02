@@ -6,7 +6,7 @@
 # declare ARTIFACTORYPASSWORD=your-art-password
 
 source ~/.artifactory-creds
- 
+
 ORG_ID="com/dell/spe/mres"
 ARTIFACT_ID="$(cat .app-name)"
 REVISION=$(cat .revision)
@@ -16,7 +16,7 @@ function publish_art()
 {
     local -r target="${1:?}"
     local file="deploy/$(basename "$target")"
-      
+
     if [ `uname` = "Darwin" ]; then
       local md5Value="$(md5 -q "$file")"
       local sha1Value="$(shasum "$file")"
@@ -27,9 +27,9 @@ function publish_art()
 
     md5Value="${md5Value:0:32}"
     sha1Value="${sha1Value:0:40}"
-   
+
     local -r url="https://afeoscyc-mw.cec.lab.emc.com/artifactory/cyclone-devops-mw/$target"
-   
+
     echo "INFO: Uploading $file to $url"
     curl -k -X PUT -u $ARTIFACTORYUSER:$ARTIFACTORYPASSWORD \
          -H "X-Checksum-Md5: $md5Value" \

@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 
-if [ -z KAFKA_HOME ]; then
-   kafka_home=${kafka_home}
+if [ "$KAFKA_HOME" ]; then
+   kafka_home=${KAFKA_HOME}
 else
-   kafka_bin=$(find ~/tools/kafka_* -type d -name bin)
+   kafka_bin=$(find ~/tools/kafka_* -type d -name bin 2>/dev/null)
    if [ "$kafka_bin" ]; then
       kafka_home=$(dirname $kafka_bin)
    else
       echo "Cannot find or set KAFKA_HOME"
-      exit 1
    fi
 fi
 

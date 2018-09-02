@@ -1,4 +1,28 @@
+#!/usr/bin/env bash
 # Usage: source set-kafka-cluster dev|dur|hop|host [ip]|local
+
+# To enable container development on a VM running on a laptop or
+# workstation, Kafka listeners should NOT be set to localhost when
+# configuring Kafka. In addition, setting listeners to a FQ host name
+# may not resolve correctly when multicast DNS is used. So, when setting
+# the Kafka cluster to 'local' we need to derive the host ip 'manually'.
+if [ `uname` = "Linux" ]; then
+   # If all Linux/containers supported Perl regex grep then: grep -Po 'dev \K[\w]+'
+   export HOST_IF=$(ip route show | grep default | cut -d \  -f 3)
+   export HOST_IP=$(ip addr show dev eth0 | grep inet | cut -d \t -f 2 | cut -d \/ -f 1)
+else
+   # BSDs
+   GW_INFO=`netstat -nr -f inet | grep default | sed -E 's/[ \t]+/ /g'`
+   export DEF_GW="`echo ${GW_INFO} | cut -d \  -f 2`"
+   if [ `uname` = "Darwin" ]; then
+      export HOST_IF=`echo ${GW_INFO} | cut -d \  -f 6`
+   elif [ `uname` = "FreeBSD" ]; then
+      export HOST_IF=`echo ${GW_INFO} | cut -d \  -f 4`
+   else
+      export HOST_IF="`echo ${GW_INFO} | cut -d \  -f 8`"
+   fi
+   export HOST_IP="`/sbin/ifconfig ${HOST_IF} | grep -w inet | cut -d \  -f 2`"
+fi
 
 if [ "$1" == "hop" ]; then
    # Hopkinton cluster -- Vijay Basava  10gb Optical SLICS
@@ -34,14 +58,15 @@ elif [ "$1" == "host" ]; then
    export ZK_HOSTS=${host_cluster}:2181
    export AVRO_HOSTS=${host_cluster}
    export KAFKA_CLUSTER=$1
-elif [ "$1" == "local" ]; then
-   export BOOTSTRAP_SERVERS=localhost:9092
-   export ZK_HOSTS=localhost:2181
-   export AVRO_HOSTS=localhost
+elif [ "$1" == "localhost" ]; then
+   # Broker's server.properties file's 'listener' is set to listen on the
+   # hostname's FQ name instead of merely localhost.
+   export BOOTSTRAP_SERVERS=$HOST_IP:9092
+   export ZK_HOSTS=$HOST_IP:2181
+   export AVRO_HOSTS=$HOST_IP
    export KAFKA_CLUSTER=$1
 else
    echo ""
    echo "Usage: source $(dirname $0)/set-kafka-cluster dev|dur|hop|host [ip]|local"
    echo ""
 fi
-

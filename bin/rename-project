@@ -45,7 +45,7 @@ find . -type f -iname \*.sql -exec sed -E -i -e \
 # Cleanup sed leftover backup files *-e
 find . -type f -name \*-e -exec rm {} \;
 
-# Rename filenames with the $from_us  pattern.
+# Rename filenames with the $from_us pattern.
 # Java requires underscores in filenames instead of -
 for file in $(find . -type f -iname \*$from_us\*); do
    echo "Renaming $file to ${file/$from_us/$to_us}"

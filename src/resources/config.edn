@@ -1,4 +1,4 @@
-{:secrets #include #join [#env HOME "/.secrets.edn"]
+{:secrets #include #join [#env HOME "/.config.edn"]
  :db {:url #join ["jdbc:postgresql://" #or [#env PG_DB_NAME ^:ref [:secrets :db :db-name]]
                   #join ["?ApplicationName=" ^:ref [:client-id]]]
       :user #or [#env PG_USER ^:ref [:secrets :db :user]]
