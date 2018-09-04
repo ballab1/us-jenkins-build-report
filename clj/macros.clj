@@ -66,3 +66,17 @@
                          [n v '_ `(js/console.info (str (name '~n) ":" ~v))]))
                    (partition 2 bindings))]
      ~@body))
+
+;; https://eli.thegreenplace.net/2017/notes-on-debugging-clojure-code/#id3
+(defmacro dcond
+  [& clauses]
+  (when clauses
+    (list
+     'if
+     (first clauses)
+     (if (next clauses)
+       `(do (println (str "dcond " '~(first clauses)))
+            ~(second clauses))
+       (throw (IllegalArgumentException.
+               "cond requires an even number of forms")))
+     (cons 'dcond (next (next clauses))))))
