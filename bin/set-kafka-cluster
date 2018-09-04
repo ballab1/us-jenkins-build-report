@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#! /bin/echo Please-source
 # Usage: source set-kafka-cluster dev|dur|hop|host [ip]|local
 
 # To enable container development on a VM running on a laptop or
@@ -8,11 +8,12 @@
 # the Kafka cluster to 'local' we need to derive the host ip 'manually'.
 if [ `uname` = "Linux" ]; then
    # If all Linux/containers supported Perl regex grep then: grep -Po 'dev \K[\w]+'
-   export HOST_IF=$(ip route show | grep default | cut -d \  -f 3)
-   export HOST_IP=$(ip addr show dev eth0 | grep inet | cut -d \t -f 2 | cut -d \/ -f 1)
+   export DEF_GW=$(ip route show | grep default | cut -d \  -f 3)
+   export HOST_IF=$(ip route show | grep default | cut -d \  -f 5)
+   export HOST_IP=$(ip addr show dev eth0 | grep inet | cut -d \t -f 2 | cut -d \/ -f 1 | cut -d \  -f 2)
 else
-   # BSDs
-   GW_INFO=`netstat -nr -f inet | grep default | sed -E 's/[ \t]+/ /g'`
+   # BSDs.
+   GW_INFO=`netstat -nr -f inet | grep -E 'default[ \t]+[0-9\.]+' | sed -E 's/[ \t]+/ /g'`
    export DEF_GW="`echo ${GW_INFO} | cut -d \  -f 2`"
    if [ `uname` = "Darwin" ]; then
       export HOST_IF=`echo ${GW_INFO} | cut -d \  -f 6`
@@ -23,6 +24,8 @@ else
    fi
    export HOST_IP="`/sbin/ifconfig ${HOST_IF} | grep -w inet | cut -d \  -f 2`"
 fi
+
+echo "DEF_GW=$DEF_GW, HOST_IF=$HOST_IF, HOST_IP=$HOST_IP"
 
 if [ "$1" == "hop" ]; then
    # Hopkinton cluster -- Vijay Basava  10gb Optical SLICS

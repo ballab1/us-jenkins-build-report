@@ -51,15 +51,11 @@ function run_clj() {
 if [ "$1" == "dev" ]; then
    jenv graal; java -version
    set_repl_ports
-   set_kafka_cluster localhost # Unless $KAFKA_IP is set
-   bin/validate-kafka-env
    # Debug interactively against a production configuration. Check config.edn.
    #export CONFIG_PROFILE=':prod'; export TIMBRE_LEVEL=':debug'
    export RUN_DEV_MODE=true
    run_clj $2
 elif [ "$1" == "prod" ]; then
-   set_kafka_cluster hop       # Unless $KAFKA_IP is set
-   bin/validate-kafka-env
    export CONFIG_PROFILE=':prod'
    # Debug interactively against a production environment.
    #export RUN_DEV_MODE=true; export TIMBRE_LEVEL=':debug'
@@ -144,7 +140,7 @@ elif [ "$1" == "clean" ]; then
 else
    echo "Usage:"
    echo "   run clean"
-   echo "   [KAFKA_IP=ip] [nohup] run dev|prod [repl|nrepl|rebl|itest|jar|depstar|capsule|1jar] [&]"
+   echo "   [BOOTSTRAP_SERVERS=ip:port] [nohup] run dev|prod [repl|nrepl|rebl|itest|jar|depstar|capsule|1jar] [&]"
    echo "   run pkg [mvn|gradle|depstar|capsule|1jar]"
    echo "   run docker build [mvn|gradle|depstar|capsule|1jar]|run [debug]|clean|ls|scrub"
 fi
