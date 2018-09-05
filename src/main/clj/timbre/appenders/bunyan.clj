@@ -62,7 +62,9 @@
   (assoc (taoensso.timbre.appenders.core/println-appender)
          :timestamp-opts {:pattern iso-pattern}
          :output-fn bunyan-log-output
-         :min-level (cfg/timbre-log-level)))
+         :min-level (cfg/timbre-log-level)
+         :ns-whitelist (cfg/timbre-ns-whitelist)
+         :ns-blacklist (cfg/timbre-ns-blacklist)))
 
 (defn bunyan-spit-appender
   "Returns a Timbre appender which emits bunyan compatible json strings to a log-file"
@@ -86,7 +88,9 @@
   (assoc (rot-app/rotor-appender {:path path :max-size max-size :backlog backlog})
          :timestamp-opts {:pattern iso-pattern}
          :output-fn bunyan-log-output
-         :min-level (cfg/timbre-log-level)))
+         :min-level (cfg/timbre-log-level)
+         :ns-whitelist (cfg/timbre-ns-whitelist)
+         :ns-blacklist (cfg/timbre-ns-blacklist)))
 ;
 ; Configure timbre bunyan logging
 ;
@@ -96,7 +100,7 @@
 
 ; Set Zulu timestamp format for all loggers
 (log/merge-config! {:timestamp-opts {:pattern "[yyyy-MM-dd'T'HH:mm:ss.SSS'Z']",
-                                      :locale :jvm-default, :timezone :utc}})
+                                     :locale :jvm-default, :timezone :utc}})
 
 ; Disable the default stdout logger from timbre
 (log/merge-config! {:appenders {:println nil}})

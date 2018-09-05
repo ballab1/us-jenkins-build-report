@@ -37,7 +37,7 @@
   (get-in config [:db :password]))
 
 (defn bootstrap-servers []
-  (config :bootstrap-servers))
+  (get-in config [:kafka :bootstrap-servers]))
 
 (defn topic []
   (config :topic))
@@ -61,13 +61,20 @@
 (defn max-log-files []
   (or (config :max-log-files) 10))  ; Make default 10 log files
 
+
 (defn timbre-log-level []
-  ; Aero does NOT handle env var string to keyword conversion automatically.
-  (or (if-let [level (config :timbre-level)]
+  ; handle env var string to keyword conversion automatically.
+  (or (if-let [level (get-in config [:timbre :level])]
         (if (string? level)
           (edn/read-string level)
           level))
       :debug))
+
+(defn timbre-ns-whitelist []
+  (get-in config [:timbre :ns-whitelist] []))
+
+(defn timbre-ns-blacklist []
+  (get-in config [:timbre :ns-blacklist] []))
 
 (def get-manifest
   "Keywordizes the manifest, assumed to be on the classpath"

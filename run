@@ -65,6 +65,8 @@ elif [ "$1" == "pkg" ]; then
    # Remove dependencies on development jars
    touch deps.edn
    clojure -Sverbose -Spom $*
+   # Compile out any logging below this "TIMBRE_LEVEL"
+   export TIMBRE_LEVEL=':info'
    [ -d $PKG_DIR ] || mkdir $PKG_DIR
    if [ "$2" == "mvn" ]; then
       # 'auto merge' mvn plugins into the generated pom.xml. Only add clojure-maven-plugin xml when not present in pom.xml
