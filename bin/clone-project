@@ -13,10 +13,12 @@ dest_dir=$1
 
 if [ $# -eq 1 ]; then
    # Destination directory tail part is the project name
-	proj_name=${dest_dir##*/}
+   proj_name=${dest_dir##*/}
+   from=${orig_dir##*/}
 elif [ $# -eq 2 ]; then
    # Provided name
-	proj_name=$2
+   from=$1
+   proj_name=$2
 else
    usage
    exit -1
@@ -28,7 +30,6 @@ rsync -rv --exclude=.git --exclude-from etc/generated-artifacts . $dest_dir
 
 cd $dest_dir
 
-from=uS-lib
 to=$proj_name
 
 # Change back to original calling dir before calling

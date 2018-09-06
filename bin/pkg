@@ -15,6 +15,9 @@
 # A side benefit is that we can compile and package without the need to
 # install gradle or maven.
 
+# Ensure we are executing in the project directory.
+cd $(dirname $0)/..
+
 source etc/utils.shlib
 set_revision
 
@@ -56,6 +59,7 @@ function create_manifest() {
    manifest=.manifest
    echo "Title: $(cat .app-name)" > $manifest
    echo "SCM-Revision: $(cat .revision)" >> $manifest
+   echo "SCM-Location: $(grep -m1 url .git/config | cut -d \  -f 3)" >> $manifest
    echo "Built-By: $USER" >> $manifest
    echo "Build-Timestamp: $(date)" >> $manifest
    echo "Build-Host: $(uname -vn)" >> $manifest

@@ -61,7 +61,6 @@
 (defn max-log-files []
   (or (config :max-log-files) 10))  ; Make default 10 log files
 
-
 (defn timbre-log-level []
   ; handle env var string to keyword conversion automatically.
   (or (if-let [level (get-in config [:timbre :level])]

@@ -5,6 +5,9 @@
 # declare ARTIFACTORYUSER=your-art-login
 # declare ARTIFACTORYPASSWORD=your-art-password
 
+# Ensure we are executing in the project directory.
+cd $(dirname $0)/..
+
 source ~/.artifactory-creds
 
 ORG_ID="com/dell/spe/mres"
