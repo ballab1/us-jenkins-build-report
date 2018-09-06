@@ -142,12 +142,11 @@
       </plugin>
     </plugins>
     <resources>
-      <!-- resource processsing with a different output directory for logback.xml -->
+      <!-- resource processsing -->
       <resource>
         <directory>src/resources</directory>
         <includes>
           <include>config.edn</include>
-          <include>logback.xml</include>
           <include>uS-core-events.sql</include>
           <include>tlds-alpha-by-domain.txt</include>
         </includes>
