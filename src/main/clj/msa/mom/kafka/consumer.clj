@@ -6,9 +6,7 @@
             [config.env :as cfg]
             [msgpack.core :as msg]
             [taoensso.nippy :as nippy]
-            [taoensso.timbre :as log]
-            ; Merely including will initialize bunyan logging
-            [timbre.appenders.bunyan])
+            [timbre.appenders.bunyan :as log])
   (:import (java.io ByteArrayInputStream)
            (java.net InetAddress)
            (java.time Instant)

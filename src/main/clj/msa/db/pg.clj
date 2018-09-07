@@ -3,7 +3,7 @@
   (:require [clojure.java.jdbc :as jdbc]
             [config.env :as cfg]
             [mount.core :refer [defstate]]
-            [taoensso.timbre :as log])
+            [timbre.appenders.bunyan :as log])
   (:import (com.zaxxer.hikari HikariDataSource))
   (:gen-class))
 

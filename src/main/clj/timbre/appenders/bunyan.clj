@@ -7,10 +7,19 @@
             [config.env :as cfg]
             [clojure.string :as string]
             [taoensso.timbre :as log]
-            [taoensso.timbre.appenders.3rd-party.rolling :as rol-app]
+            #_[taoensso.timbre.appenders.3rd-party.rolling :as rol-app]
             [taoensso.timbre.appenders.3rd-party.rotor :as rot-app]
             )
   (:gen-class))
+
+; Intern log level macros as to appear belonging to this name space.
+; https://stackoverflow.com/questions/20831029/how-is-it-possible-to-intern-macros-in-clojure
+(intern 'timbre.appenders.bunyan (with-meta 'trace {:macro true}) @#'taoensso.timbre/trace)
+(intern 'timbre.appenders.bunyan (with-meta 'debug {:macro true}) @#'taoensso.timbre/debug)
+(intern 'timbre.appenders.bunyan (with-meta 'info {:macro true}) @#'taoensso.timbre/info)
+(intern 'timbre.appenders.bunyan (with-meta 'warn {:macro true}) @#'taoensso.timbre/warn)
+(intern 'timbre.appenders.bunyan (with-meta 'error {:macro true}) @#'taoensso.timbre/error)
+(intern 'timbre.appenders.bunyan (with-meta 'fatal {:macro true}) @#'taoensso.timbre/fatal)
 
 (def bunyan-levels
   "Maps a logging level keyword into a bunyan integer level"
@@ -73,7 +82,7 @@
          :timestamp-opts {:pattern iso-pattern}
          :output-fn bunyan-log-output))
 
-(defn bunyan-rolling-appender
+#_(defn bunyan-rolling-appender
   "Returns a Timbre appender which emits bunyan compatible json strings to a daily rolling log-file"
   [log-file]
   (assoc (rol-app/rolling-appender {:path log-file})

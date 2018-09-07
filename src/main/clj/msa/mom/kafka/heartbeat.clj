@@ -5,7 +5,7 @@
             [msa.mom.kafka.consumer :refer [consumer-base-cfg]]
             [msa.mom.kafka.producer :refer [create-msg-producer
                                             define-producer]]
-            [taoensso.timbre :as log])
+            [timbre.appenders.bunyan :as log])
   (:import (com.fasterxml.uuid EthernetAddress Generators))
   (:gen-class))
 

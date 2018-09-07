@@ -25,7 +25,7 @@
     cheshire {:mvn/version "5.8.0"}
     clojure-msgpack {:mvn/version "1.2.1"}
     com.taoensso/nippy {:mvn/version "2.14.0"}
-    com.cognitect/transit-clj {:mvn/version "0.8.309"}
+    com.cognitect/transit-clj {:mvn/version "0.8.313"}
     com.fasterxml.uuid/java-uuid-generator {:mvn/version "3.1.5"}
 
     ;; For using a Java interface to kafka
@@ -44,7 +44,7 @@
     ; https://github.com/pgjdbc/pgjdbc
     ; https://jdbc.postgresql.org/download.html
     ; See maven pom file. Supports JDBC 4.2 and jre8+
-    org.postgresql/postgresql {:mvn/version "42.2.4"}
+    org.postgresql/postgresql {:mvn/version "42.2.5"}
   }
   ;; Aliases
 	;;   resolve-deps aliases (-R) affect dependency resolution, options:
