@@ -8,17 +8,18 @@
 # Ensure we are executing in the project directory.
 cd $(dirname $0)/..
 
-source ~/.artifactory-creds
-
 ORG_ID="com/dell/spe/mres"
 ARTIFACT_ID="$(cat .app-name)"
 REVISION=$(cat .revision)
-QUALIFIER=$1
+QUALIFIER=$2
+
+source_dir="deploy"
+sub_target="$ORG_ID/$ARTIFACT_ID/$REVISION/"
 
 function publish_art()
 {
-    local -r target="${1:?}"
-    local file="deploy/$(basename "$target")"
+    local file=$1
+    local -r target=$2
 
     if [ `uname` = "Darwin" ]; then
       local md5Value="$(md5 -q "$file")"
@@ -42,12 +43,26 @@ function publish_art()
 }
 
 if [ $QUALIFIER ]; then
-   publish_art "$ORG_ID/$ARTIFACT_ID/$REVISION/$ARTIFACT_ID-$REVISION-$QUALIFIER.jar"
+   jar="$source_dir/$ARTIFACT_ID-$REVISION-$QUALIFIER.jar"
 else
-   publish_art "$ORG_ID/$ARTIFACT_ID/$REVISION/$ARTIFACT_ID-$REVISION.jar"
+   jar="$source_dir/$ARTIFACT_ID-$REVISION.jar"
 fi
+pom="$source_dir/$ARTIFACT_ID-$REVISION.pom"
 
-publish_art "$ORG_ID/$ARTIFACT_ID/$REVISION/$ARTIFACT_ID-$REVISION.pom"
+if [ "$1" == "art" ]; then
+   source ~/.artifactory-creds
+   publish_art $jar $sub_target
+   publish_art $pom $sub_target
+elif [ "$1" == "local" ]; then
+   target_dir="$HOME/.m2/repository/$sub_target"
+   mkdir -p $target_dir
+   cp $jar $pom $target_dir
+   echo "Content of $target_dir:"
+   ls -latr $target_dir
+else
+   echo "Usage: $0 art|local [qualifier]"
+   echo ""
+fi
 
 # To retrieve manually:
 #     curl -u corp-id https://afeoscyc-mw.cec.lab.emc.com/artifactory/cyclone-devops-mw/com/dell/spe/mres/uS-lib/v0.0-5-g503e219/uS-lib-v0.0-5-g503e219.jar -o some.jar
