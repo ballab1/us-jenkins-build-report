@@ -74,7 +74,8 @@ function set_revision() {
       if [ $? != 0 ]; then
          if [ -d .git ]; then
             echo "Auto creating tag v0.0 on first commit."
-            git tag v0.0 $(git rev-list --max-parents=0 HEAD)
+            # If multiple SHAs (submodule|subtree) assume last SHA is initial commit
+            git tag v0.0 $(git rev-list --max-parents=0 HEAD | tail -n 1)
             # Try again
             set_revision
          else
