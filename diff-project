@@ -1,0 +1,2 @@
+#nvim -c ":DirDiff ../uS-template ."
+nvim -c ":DirDiff . $1"

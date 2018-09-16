@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+usage() {
+   echo "Clone the current project directory to a new project directory with name
+'target_dir', renaming elements in files and filenames from 'from' to 'to'.
+"
+   echo "Usage: $0 target_dir [[from] to]"
+   echo ""
+}
+
+orig_dir=$PWD
+dest_dir=$1
+
+if [ $# -eq 1 ]; then
+   # Destination directory tail part is the project name
+   proj_name=${dest_dir##*/}
+   from=${orig_dir##*/}
+elif [ $# -eq 2 ]; then
+   # Provided name
+   from=$1
+   proj_name=$2
+else
+   usage
+   exit -1
+fi
+
+echo "PROJECT_NAME $proj_name"
+
+rsync -rv --exclude=.git --exclude-from etc/generated-artifacts . $dest_dir
+
+cd $dest_dir
+
+to=$proj_name
+
+# Change back to original calling dir before calling
+# rename-project in case we have relative dir paths as args.
+cd $orig_dir
+
+# Rename contents and file names after project has been copied
+$(dirname $0)/rename-project $dest_dir $from $to

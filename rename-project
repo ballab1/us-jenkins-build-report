@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+usage() {
+   echo "Rename elements in files and filenames under directory 'target_dir'
+from 'from' to 'to'.
+"
+   echo "Usage: $0 target_dir from to"
+   echo ""
+}
+
+if [ ! $# -eq 3 ]; then
+   usage
+   exit -1
+fi
+
+dest_dir=$1
+from=$2
+to=$3
+
+# Create from and to patterns based on underscores rather than hyphens
+# Used for DB table names.
+from_us=${from//-/_}
+to_us=${to//-/_}
+
+# Lower case versions. Postgres creates all identifiers in lowercase
+# regardless of original mixed case name. This applies to *-table-exists?
+# function in *.sql files.
+from_us_lc=$(echo $from_us | tr '[:upper:]' '[:lower:]')
+to_us_lc=$(echo $to_us | tr '[:upper:]' '[:lower:]')
+
+echo "Starting in $PWD"
+# cd into the destination to avoid renaming the directory
+# from $from to $to if the project name matches the directory name
+cd $dest_dir
+echo "Changing to directory $dest_dir"
+
+# stream edit file contents
+find . -type f -exec sed -i -e "s/$from/$to/g; s/$from_us/$to_us/g" {} \;
+
+# Find DB table references and change hyphens to underscores
+find . -type f -iname \*.clj -exec sed -E -i -e '/ conn :/ s/([a-z])-([a-z])/\1_\2/g' {} \;
+find . -type f -iname \*.sql -exec sed -E -i -e \
+   "/^[ \t]*--/! s/([a-z])-([a-z])/\1_\2/g; /^[ \t]*-- :doc/ s/([a-z])-([a-z])/\1_\2/g; /c\.relname/ s/$from_us_lc/$to_us_lc/g" {} \;
+
+# Cleanup sed leftover backup files *-e
+find . -type f -name \*-e -exec rm {} \;
+
+# Rename FILES with the $from_us pattern.
+# Java requires underscores in filenames instead of -
+for file in $(find . -type f -iname \*$from_us\*); do
+   echo "Renaming file $file to ${file/$from_us/$to_us}"
+   mv $file ${file/$from_us/$to_us}
+done
+
+# Rename DIRECTORIES with the $from_us pattern.
+# Java requires underscores in filenames instead of -
+for file in $(find . -type d -iname \*$from_us\*); do
+   echo "Renaming directory $file to ${file/$from_us/$to_us}"
+   mv $file ${file/$from_us/$to_us}
+done
+
+# Rename files with the $from pattern.
+# e.g. SQL files.
+for file in $(find . -type f -iname \*$from\*); do
+   echo "Renaming file $file to ${file/$from/$to}"
+   mv $file ${file/$from/$to}
+done
