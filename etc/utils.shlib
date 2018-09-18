@@ -1,0 +1,118 @@
+#! /bin/echo Please-source
+
+function jenv() {
+   uname=$(uname)
+   if [ $uname = "Darwin" ] || [ $uname = "Linux" ]; then
+      open_jdk_home=$(find ~/tools/jdk-* -type d -name bin 2>/dev/null)
+      if [ $uname = "Darwin" ]; then
+         graal_home=$(find ~/tools/graalvm-ce-* -type d -name Home 2>/dev/null)
+      else
+         graal_home=$(find ~/tools/graalvm-ce-* -type d -name jre 2>/dev/null)
+      fi
+      if [ $graal_home ] && [ $1 = "graal" ]; then
+         PATH=$graal_home/bin:$PATH
+         JAVA_HOME=$graal_home
+      elif [ $open_jdk_home ] && [ $1 = "ojdk" ]; then
+         JAVA_HOME=$(dirname $open_jdk_home)
+         PATH=$JAVA_HOME/bin:$PATH
+      elif [ $uname = "Darwin" ]; then
+         JAVA_HOME=`/usr/libexec/java_home -v 10`
+      elif [ $uname = "Linux" ]; then
+         sys_java=$(readlink -f $(which java))
+         JAVA_HOME=${sys_java%/bin/java}
+      fi
+   elif [ `uname` = "FreeBSD" ]; then
+      JAVA_VERSION=1.8
+   fi
+}
+
+# 'brew install coreutils' on OSX.
+function random_unused_port {
+   if [ `uname` = "Darwin" ]; then
+      shuffle=gshuf
+      ns_options='-f inet -p tcp'
+   else
+      shuffle=shuf
+      ns_options='-t'
+   fi
+   if [ `uname` = "FreeBSD" ]; then
+      ns_options='-f inet -p tcp'
+   fi
+   (netstat -lan $ns_options |
+    sed '1,2d; s/[^[:space:]]*[[:space:]]*[^[:space:]]*[[:space:]]*[^[:space:]]*[[:space:]]*[^[:space:]]*:\([0-9]*\)[[:space:]]*.*/\1/g' |
+    sort -n | uniq; seq 1 1000; seq 1 65535
+    ) | sort -n | uniq -u | $shuffle -n 2
+ }
+
+function set_repl_ports() {
+   # turn string into an array using \n as a delimiter
+   OPEN_PORTS=($(random_unused_port))
+   # export for init-cider.clj
+   export NREPL_PORT=${OPEN_PORTS[0]}
+   REPL_PORT=${OPEN_PORTS[1]}
+   echo $NREPL_PORT > .nrepl-port  # vim-fireplace
+   echo $REPL_PORT > .repl-port    # repl
+}
+
+function gen_proj_pom() {
+   echo \
+"<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.dell.spe.mres</groupId>
+  <artifactId>$APP</artifactId>
+  <version>$REVISION</version>
+</project>" > ${FQ_APP_NS}.pom
+}
+
+function set_revision() {
+   # Only change revision if we have git available.
+   # Assume no git available in a container.
+   # Container will have .revision & .app-name copied in.
+   if type -p "git" > /dev/null; then
+      git describe --tags --dirty > .revision
+      # If git exited with an issue create a tag automatically
+      if [ $? != 0 ]; then
+         if [ -d .git ]; then
+            echo "Auto creating tag v0.0 on first commit."
+            # If multiple SHAs (submodule|subtree) assume last SHA is initial commit
+            git tag v0.0 $(git rev-list --max-parents=0 HEAD | tail -n 1)
+            # Try again
+            set_revision
+         else
+            echo "No git repository, revision set to 'No-Git'!"
+            echo "No-Git" > .revision
+         fi
+      fi
+      APP=${PWD##*/}
+      echo ${APP} > .app-name
+   fi
+   get_revision
+}
+
+function get_revision() {
+   REVISION=$(cat .revision)
+   APP=$(cat .app-name)
+   FQ_APP_NS="${PKG_DIR}/${APP}-${REVISION}"
+   FQ_APP="${FQ_APP_NS}.jar"
+   FQ_DS_APP=${FQ_APP_NS}-ds.jar
+   FQ_CAPS_APP=${FQ_APP_NS}-caps.jar
+   FQ_1JAR_APP=${FQ_APP_NS}-1jar.jar
+}
+
+function set_kafka_cluster() {
+   if [ -z ${KAFKA_IP} ]; then
+      source bin/set-kafka-cluster $1
+   else
+      source bin/set-kafka-cluster host $KAFKA_IP
+   fi
+}
+
+function is_docker_env_file_set() {
+   if [ ! $DOCKER_ENV_FILE ]; then
+      echo "Please set DOCKER_ENV_FILE environment variable before invoking \"./run docker run\" command."
+      echo "  e.g.: export DOCKER_ENV_FILE=~/.docker-env (chmod go-rwx)"
+      exit -1
+   fi
+}
+
+# vim: set ft=sh ts=3 sts=3 sw=3 tw=78 et:
