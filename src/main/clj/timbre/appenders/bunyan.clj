@@ -118,12 +118,15 @@
 (log/merge-config! {:appenders {:bunyan (bunyan-appender)}})
 
 #_(log/merge-config! {:appenders {:bunyan-spit (bunyan-spit-appender
-                                                 (str "./logs/" (cfg/client-id) ".log"))}})
+                                                 (str (cfg/log-dir) (when-not (string/ends-with? (cfg/log-dir) "/") "/")
+                                                      (cfg/client-id) ".log"))}})
 #_(log/merge-config! {:appenders {:bunyan-rolling (bunyan-rolling-appender
-                                                    (str "./logs/" (cfg/client-id) "-rolling.log"))}})
+                                                    (str (cfg/log-dir) (when-not (string/ends-with? (cfg/log-dir) "/") "/")
+                                                         (cfg/client-id) "-rolling.log"))}})
 
 (log/merge-config! {:appenders {:bunyan-rotor (bunyan-rotor-appender
-                                                {:path (str "./logs/" (cfg/client-id) ".log")
+                                                {:path (str (cfg/log-dir) (when-not (string/ends-with? (cfg/log-dir) "/") "/")
+                                                            (cfg/client-id) ".log")
                                                  :max-size (cfg/max-log-size-bytes)
                                                  :backlog (cfg/max-log-files)})}})
 #_(print log/*config*)

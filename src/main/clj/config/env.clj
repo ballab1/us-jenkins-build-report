@@ -55,25 +55,28 @@
   (or (System/getenv "RUN_DEV_MODE") false)
   #_(config :run-dev-mode))
 
+(defn log-dir []
+  (or (get-in config [:log :dir]) "log"))
+
 (defn max-log-size-bytes []
-  (or (config :max-log-size-bytes) (* 1024 1024 10)))  ; Make default 10 Megs
+  (or (get-in config [:log :max-log-size-bytes]) (* 1024 1024 10)))  ; Make default 10 Megs
 
 (defn max-log-files []
-  (or (config :max-log-files) 10))  ; Make default 10 log files
+  (or (get-in config [:log :max-log-files]) 10))  ; Make default 10 log files
 
 (defn timbre-log-level []
   ; handle env var string to keyword conversion automatically.
-  (or (if-let [level (get-in config [:timbre :level])]
+  (or (if-let [level (get-in config [:log :level])]
         (if (string? level)
           (edn/read-string level)
           level))
       :debug))
 
 (defn timbre-ns-whitelist []
-  (get-in config [:timbre :ns-whitelist] []))
+  (get-in config [:log :ns-whitelist] []))
 
 (defn timbre-ns-blacklist []
-  (get-in config [:timbre :ns-blacklist] []))
+  (get-in config [:log :ns-blacklist] []))
 
 (def get-manifest
   "Keywordizes the manifest, assumed to be on the classpath"
