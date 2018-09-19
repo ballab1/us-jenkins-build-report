@@ -56,7 +56,7 @@
                        org.clojure/tools.trace {:mvn/version "0.7.9"}
                        com.billpiel/sayid {:mvn/version "0.0.17"}
                        slamhound {:mvn/version "1.5.5"}
-                       cljfmt {:mvn/version "0.6.0"}
+                       cljfmt {:mvn/version "0.6.1"}
                        jonase/eastwood {:mvn/version "0.2.9" :exclusions [org.clojure/clojure]}
                        ; Also install vim-kibit (NOT kibit-vim as it invokes lein)
                        jonase/kibit {:mvn/version "0.1.6" :exclusions [org.clojure/clojure]}}
