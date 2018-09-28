@@ -23,14 +23,13 @@ if [ $# -eq 1 ]; then
      # Only add <prerequisites> on line 8 when not present in pom.xml
      grep -q '^[ \t]*<prerequisites>' pom.xml || $GNU_SED -i '8i  <prerequisites> <maven>3.3.0</maven> </prerequisites>' pom.xml
      # Only add clojure-maven-plugin xml when not present in pom.xml
-     grep -q '^[ \t]*<artifactId>clojure-maven-plugin</artifactId>' pom.xml || sed -i -e '/<sourceDirectory>src\/main\/clj<\/sourceDirectory>/r src/dev/mvn-plug-res.xml' pom.xml 
+     grep -q '^[ \t]*<artifactId>clojure-maven-plugin</artifactId>' pom.xml || sed -i -e '/<sourceDirectory>src\/main\/clj<\/sourceDirectory>/r src/dev/mvn-plug-res.xml' pom.xml
      [ -f pom.xml-e ] && rm pom.xml-e
      mvn versions:display-plugin-updates
    else
        echo ""
-       echo "Usage: dcheck [plugin|all]"
+       echo "Usage: $0 [plugin|all]"
    fi
 else
    mvn versions:display-dependency-updates
 fi
-
