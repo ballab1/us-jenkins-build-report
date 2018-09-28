@@ -22,9 +22,12 @@ case "$1" in
       ;;
 esac
 
+echo "Updating broker listener IP..."
+$(dirname $0)/update-kafka-properties $1
 echo "JMX_PORT=$JMX_PORT"
 cd $kafka_home
-./bin/kafka-server-start.sh -daemon config/server-$1.properties
+#./bin/kafka-server-start.sh -daemon config/server-$1.properties
+./bin/kafka-server-start.sh ./config/server-$1.properties
 cd -
 
 jps -lm
