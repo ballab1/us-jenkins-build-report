@@ -16,7 +16,7 @@ if [ $# -eq 1 ]; then
         mvn versions:display-dependency-updates
      fi
      if [ `uname` = "Darwin" ]; then
-        GNU_SED=`which gsed`  # We need GNU sed.
+        GNU_SED=`which gsed`  # We need GNU sed: brew install gnu-sed
      else
         GNU_SED=`which sed`
      fi
