@@ -7,7 +7,7 @@
 
 # Ensure we're using the system jdk
 if [ `uname` = "Darwin" ]; then
-   JAVA_HOME=`/usr/libexec/java_home -v 10`
+   JAVA_HOME=`/usr/libexec/java_home -v 11`
 fi
 clojure -R:test:dev:dev-cljs:standalone:bench:rebel-clj:rebel-cljs -Sverbose -Spom $*
 if [ $# -eq 1 ]; then
