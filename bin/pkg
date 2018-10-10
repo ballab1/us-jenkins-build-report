@@ -40,7 +40,7 @@ function extract_dependencies() {
    # a previous version upon collision. Reverse process the list to match what a
    # classloader would see.
    manifest_cp=()
-   files=(${cpath//:/ })
+   files=(${1//:/ })
    cd $target_dir;
    for (( i=${#files[@]}-1;i>=0;i-- )); do
       file=${files[i]}
@@ -84,29 +84,34 @@ function package() {
 
 function find_project_namespaces() {
    # Get the project's namespaces
-   namespaces=()
+   local namespaces=()
    for file in $(find src/main/clj -name \*.clj); do
       drop_front=${file##src/main/clj/}
       drop_extension=${drop_front%%.clj}
       from_underscore_to_dash=${drop_extension//_/-}
       namespaces+="${from_underscore_to_dash//\//.} "
    done
+   echo $namespaces
+}
+
+function compile() {
+   # Compile the project's namespaces like msa.core. WARNING compiled project
+   # classes will overwrite decompressed jars classes upon collision.
+   echo "namespaces=$(find_project_namespaces)"
+   java -cp $target_dir:$1 -Dclojure.compile.path=$target_dir clojure.lang.Compile $(find_project_namespaces)
 }
 
 function compile_and_package() {
    printf "MAIN_NS=$MAIN_NS\nPKG_DIR=$PKG_DIR\n"
    # Get the project's classpath
-   cpath=$(clj -Spath)
+   local cpath=$(clj -Spath)
 
-   extract_dependencies
-
-   # Compile the project's namespaces like msa.core. WARNING compiled project
-   # classes will overwrite decompressed jars classes upon collision.
-   find_project_namespaces
-   java -cp $target_dir:$cpath -Dclojure.compile.path=$target_dir clojure.lang.Compile $namespaces
+   extract_dependencies $cpath
+   compile $cpath
 
    create_manifest
    package
 }
 
+#compile $(clj -Spath)
 compile_and_package
