@@ -74,6 +74,9 @@ elif [ "$1" == "pkg" ]; then
       [ -f pom.xml ] && rm pom.xml-e
       mvn package
    elif [ "$2" == "depstar" ]; then
+      # No qualifer in the name. Meant as clj source based library jar.
+      clj -A:depstar -m hf.depstar.uberjar ${FQ_APP}
+   elif [ "$2" == "depstar-uber" ]; then
       FQ_APP=${FQ_DS_APP}
       clj -A:depstar -m hf.depstar.uberjar ${FQ_APP}
    elif [ "$2" == "capsule" ]; then
@@ -149,6 +152,6 @@ else
    echo "   run clean"
    echo "   run upsub -- update git subtrees"
    echo "   [BOOTSTRAP_SERVERS=ip:port] [nohup] run dev|prod [repl|nrepl|rebl|itest|jar|depstar|capsule|1jar] [&]"
-   echo "   run pkg [mvn|gradle|depstar|capsule|1jar]"
+   echo "   run pkg [mvn|gradle|depstar|depstar-uber (uber only)|capsule (uber only)|1jar (uber only)]"
    echo "   run docker build [mvn|gradle|depstar|capsule|1jar]|run [debug]|clean|ls|scrub"
 fi
