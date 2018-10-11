@@ -7,7 +7,7 @@
 
 # Ensure we're using the system jdk
 if [ `uname` = "Darwin" ]; then
-   JAVA_HOME=`/usr/libexec/java_home -v 10`
+   JAVA_HOME=`/usr/libexec/java_home -v 11`
 fi
 clojure -R:test:dev:dev-cljs:standalone:bench:rebel-clj:rebel-cljs -Sverbose -Spom $*
 if [ $# -eq 1 ]; then
@@ -16,21 +16,20 @@ if [ $# -eq 1 ]; then
         mvn versions:display-dependency-updates
      fi
      if [ `uname` = "Darwin" ]; then
-        GNU_SED=`which gsed`  # We need GNU sed.
+        GNU_SED=`which gsed`  # We need GNU sed: brew install gnu-sed
      else
         GNU_SED=`which sed`
      fi
      # Only add <prerequisites> on line 8 when not present in pom.xml
      grep -q '^[ \t]*<prerequisites>' pom.xml || $GNU_SED -i '8i  <prerequisites> <maven>3.3.0</maven> </prerequisites>' pom.xml
      # Only add clojure-maven-plugin xml when not present in pom.xml
-     grep -q '^[ \t]*<artifactId>clojure-maven-plugin</artifactId>' pom.xml || sed -i -e '/<sourceDirectory>src\/main\/clj<\/sourceDirectory>/r src/dev/mvn-plug-res.xml' pom.xml 
+     grep -q '^[ \t]*<artifactId>clojure-maven-plugin</artifactId>' pom.xml || sed -i -e '/<sourceDirectory>src\/main\/clj<\/sourceDirectory>/r src/dev/mvn-plug-res.xml' pom.xml
      [ -f pom.xml-e ] && rm pom.xml-e
      mvn versions:display-plugin-updates
    else
        echo ""
-       echo "Usage: dcheck [plugin|all]"
+       echo "Usage: $0 [plugin|all]"
    fi
 else
    mvn versions:display-dependency-updates
 fi
-

@@ -8,7 +8,7 @@
 # To obtain a certificate for a remote resource, like for example Artifactory, execute the following steps:
 # - Open your browser and go to the resource's URL
 #    To go to Artifactory open: https://afeoscyc-mw.cec.lab.emc.com/artifactory/webapp
-# - Use your browser's facilities to view the certificate 
+# - Use your browser's facilities to view the certificate
 #    In firefox, click on the little (i) icon to the left of the URL
 #    In the resulting drop down, click on '>' to the right of 'afeoscyc-mw.cec.lab.emc.com'
 #    At the bottom of that resulting drop down click on 'more information'
@@ -29,4 +29,9 @@ if [ ! $# -eq 2 ]; then
    exit -1
 fi
 
+if [ $(uname) == "Darwin" ]; then
+   JAVA_HOME=$(/usr/libexec/java_home)
+fi
+
+echo "JAVA_HOME is $JAVA_HOME"
 keytool -import -alias $1 -keystore  $JAVA_HOME/lib/security/cacerts -file $2
