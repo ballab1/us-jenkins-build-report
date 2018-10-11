@@ -16,7 +16,7 @@ function jenv() {
          JAVA_HOME=$(dirname $open_jdk_home)
          PATH=$JAVA_HOME/bin:$PATH
       elif [ $uname = "Darwin" ]; then
-         JAVA_HOME=`/usr/libexec/java_home -v 10`
+         JAVA_HOME=`/usr/libexec/java_home -v $uname`
       elif [ $uname = "Linux" ]; then
          sys_java=$(readlink -f $(which java))
          JAVA_HOME=${sys_java%/bin/java}
