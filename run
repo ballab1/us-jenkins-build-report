@@ -139,9 +139,15 @@ elif [ "$1" == "docker" ]; then
    fi
 elif [ "$1" == "clean" ]; then
    rm -rf $(cat etc/generated-artifacts | sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/ /g')
+elif [ "$1" == "upsub" ]; then
+   for tree in "bin" "etc" "src/dev"; do
+      echo "Updating subtree $tree"
+      git subtree pull -P $tree ../uS-common $tree
+   done
 else
    echo "Usage:"
    echo "   run clean"
+   echo "   run upsub -- update git subtrees"
    echo "   [BOOTSTRAP_SERVERS=ip:port] [nohup] run dev|prod [repl|nrepl|rebl|itest|jar|depstar|capsule|1jar] [&]"
    echo "   run pkg [mvn|gradle|depstar|capsule|1jar]"
    echo "   run docker build [mvn|gradle|depstar|capsule|1jar]|run [debug]|clean|ls|scrub"
