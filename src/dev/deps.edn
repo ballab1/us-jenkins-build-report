@@ -1,0 +1,96 @@
+;; The deps.edn file describes the information needed to build a classpath.
+;;
+;; When using the `clojure` or `clj` script, there are several deps.edn files
+;; that are combined:
+;; - install-level
+;; - user level (this file)
+;; - project level (current directory when invoked)
+;;
+;; For all attributes other than :paths, these config files are merged left to right.
+;; Only the last :paths is kept and others are dropped.
+
+{
+  ;; Paths
+  ;;   Directories in the current project to include in the classpath
+
+  ;; :paths ["src"]
+
+  ;; External dependencies
+
+  ;; :deps {
+  ;;   org.clojure/clojure {:mvn/version "1.9.0"}
+  ;; }
+
+  ;; Aliases
+	;;   resolve-deps aliases (-R) affect dependency resolution, options:
+	;;     :extra-deps - specifies extra deps to add to :deps
+	;;     :override-deps - specifies a coordinate to use instead of that in :deps
+	;;     :default-deps - specifies a coordinate to use for a lib if one isn't found
+	;;   make-classpath aliases (-C) affect the classpath generation, options:
+	;;     :extra-paths - vector of additional paths to add to the classpath
+	;;     :classpath-overrides - map of lib to path that overrides the result of resolving deps
+
+  ;; :aliases {
+  ;;   :deps {:extra-deps {org.clojure/tools.deps.alpha {:mvn/version "0.2.196"}}}
+  ;;   :test {:extra-paths ["test"]}
+  ;; }
+  :aliases {
+    :1.8 {:override-deps {org.clojure/clojure {:mvn/version "1.8.0"}}}
+    :1.9 {:override-deps {org.clojure/clojure {:mvn/version "1.9.0"}}}
+    :1.10 {:override-deps {org.clojure/clojure {:mvn/version "1.10.0-alpha6"}}}
+    ; https://github.com/seancorfield/clj-new/
+    ; clj -A:new app myname/myapp; cd myapp; clj -m myname.myapp
+    :new {:extra-deps {seancorfield/clj-new
+                   {:git/url "https://github.com/seancorfield/clj-new"
+                    :sha "108f27159501f8ce12564b398b0ea50def3892b1"}}
+           :main-opts ["-m" "clj-new.create"]}
+    ; Interactive vim development. NOTE: requires java 1.8 for 'gf' to
+    ; work in vim-fireplace.  Use: -R:dev -i init-cider
+    :dev {:extra-deps {nrepl/nrepl {:mvn/version "0.4.5"}
+                       ;org.clojure/tools.nrepl {:mvn/version "0.2.13"}
+                       com.bhauman/rebel-readline {:mvn/version "0.1.4"}
+                       cider/cider-nrepl {:mvn/version "0.18.0"}
+                       refactor-nrepl {:mvn/version "2.4.0"}
+                       mvxcvi/puget {:mvn/version "1.0.2"}
+                       mvxcvi/whidbey {:mvn/version "1.3.2"}
+                       org.clojure/tools.trace {:mvn/version "0.7.10"}
+                       com.billpiel/sayid {:mvn/version "0.0.17"}
+                       slamhound {:mvn/version "1.5.5"}
+                       cljfmt {:mvn/version "0.6.1"}
+                       jonase/eastwood {:mvn/version "0.3.1" :exclusions [org.clojure/clojure]}
+                       ; Also install vim-kibit (NOT kibit-vim as it invokes lein)
+                       jonase/kibit {:mvn/version "0.1.6" :exclusions [org.clojure/clojure]}}
+          ; Use -C:dev to add :extra-paths to the classpath to include
+          ; user.clj etc.
+          :extra-paths ["src/dev/clj"]}
+    ; Interactive Clojurescript development. Builds on -R:dev
+    ; NOTE: ClojureScript still requires clojure 1.8.
+    ; Use: -R:dev:dev-cljs -i init-figwheel
+    :dev-cljs {:extra-deps {figwheel-sidecar {:mvn/version "0.5.16"}
+                            cider/piggieback {:mvn/version "0.3.9"}
+                            ring/ring-defaults {:mvn/version "0.3.2"}}
+               ; figwheel http-server-root assumes "resources" is a classpath
+               ; root. Use -C:dev-cljs to add "resources" to cp.
+               :extra-paths ["src/resources"]}
+    ; Augment an existing project with nRepl vim interaction
+    ; Requires -R:dev:standalone & -C:dev:standalone
+    :standalone {:extra-deps {environ {:mvn/version "1.1.0"}}
+                 :extra-paths ["~/envcfg/user/.clojure/proj/dev/clj"]}
+    ; Benchmarking
+    :bench {:extra-deps {criterium {:mvn/version "0.4.4"}
+                         com.taoensso/tufte {:mvn/version "2.0.1"}}}
+    ; clojure -A:rebel-clj
+    :rebel-clj {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
+                :main-opts ["-m" "rebel-readline.main"]}
+    ; clojure -A:rebel-cljs
+    :rebel-cljs {:extra-deps {com.bhauman/rebel-readline-cljs {:mvn/version "0.1.4"}}
+                 :main-opts ["-m" "rebel-readline.main"]}
+  }
+
+  ;; Provider attributes
+
+  ;; :mvn/repos {
+  ;;   "central" {:url "https://repo1.maven.org/maven2/"}
+  ;;   "clojars" {:url "https://clojars.org/repo"}
+  ;; }
+}

@@ -1,0 +1,154 @@
+    <!-- Insert this file in pom.xml under the <build> tag -->
+    <!-- To format xml: tidy -mi -xml file-name.xml -->
+    <finalName>${project.artifactId}-${git.commit.id.describe}</finalName>
+    <plugins>
+      <!-- https://maven.apache.org/plugins/maven-jar-plugin -->
+      <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-jar-plugin -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <addClasspath>true</addClasspath>
+              <!-- (:gen-class) namespace containing -main -->
+              <mainClass>msa.core</mainClass>
+           </manifest>
+           <manifestEntries>
+             <SCM-Revision>${git.commit.id.describe}</SCM-Revision>
+           </manifestEntries>
+         </archive>
+         <outputDirectory>deploy</outputDirectory>
+        </configuration>
+      </plugin>
+      <!-- https://maven.apache.org/plugins/maven-shade-plugin/examples/includes-excludes.html -->
+      <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-shade-plugin -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.1.1</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <minimizeJar>false</minimizeJar>
+              <!--
+              <filters>
+                <filter>
+                  <artifact>clojure:clojure</artifact>
+                  <includes>
+                    <include>org/clojure/**</include>
+                  </includes>
+                  <excludes>
+                    <exclude>org/junit/experimental/**</exclude>
+                    <exclude>org/junit/runners/**</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              -->
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- https://maven.apache.org/plugins/maven-dependency-plugin -->
+      <!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-dependency-plugin -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.1.1</version>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- https://github.com/talios/clojure-maven-plugin -->
+      <!-- https://mvnrepository.com/artifact/com.theoryinpractise/clojure-maven-plugin -->
+      <plugin>
+        <groupId>com.theoryinpractise</groupId>
+        <artifactId>clojure-maven-plugin</artifactId>
+        <version>1.8.1</version>
+        <extensions>true</extensions>
+        <configuration>
+          <sourceDirectories>
+            <sourceDirectory>src/main/clj</sourceDirectory>
+          </sourceDirectories>
+        </configuration>
+        <executions>
+          <execution>
+            <id>compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+        </executions>
+     </plugin>
+     <plugin>
+       <!-- https://github.com/ktoso/maven-git-commit-id-plugin#using-the-plugin -->
+       <groupId>pl.project13.maven</groupId>
+       <artifactId>git-commit-id-plugin</artifactId>
+       <version>2.2.4</version>
+       <executions>
+           <execution>
+               <id>get-the-git-infos</id>
+               <goals>
+                   <goal>revision</goal>
+               </goals>
+           </execution>
+           <execution>
+               <id>validate-the-git-infos</id>
+               <goals>
+                   <goal>validateRevision</goal>
+               </goals>
+               <!-- *NOTE*: The default phase of validateRevision is verify, but in case you want to change it, you can do so by adding the phase here -->
+               <phase>package</phase>
+           </execution>
+        </executions>
+        <configuration>
+         <gitDescribe>
+               <!-- don't generate the describe property -->
+               <skip>false</skip>
+               <!-- 
+                   if no tag was found "near" this commit, just print the commit's id instead, 
+                   helpful when you always expect this field to be not-empty 
+               -->
+               <always>false</always>
+               <!-- when the build is triggered while the repo is in "dirty state", append this suffix -->
+               <dirty>-dirty</dirty>
+               <!--
+                   when you run git-describe it only looks only for *annotated tags* by default
+                   if you wish to consider *lightweight tags* in your describe as well you would need to switch this to *true*
+
+                   The difference between *annotated tags* and *lightweight tags* is outlined in more depth here:
+                   https://github.com/ktoso/maven-git-commit-id-plugin/#git-describe-and-a-small-gotcha-with-tags
+               -->
+               <tags>true</tags>
+               <!-- 
+                    always print using the "tag-commits_from_tag-g_commit_id-maybe_dirty" format, even if "on" a tag. 
+                    The distance will always be 0 if you're "on" the tag. 
+               -->
+               <forceLongFormat>false</forceLongFormat>
+           </gitDescribe>
+         </configuration>
+      </plugin>
+    </plugins>
+    <resources>
+      <!-- resource processsing -->
+      <resource>
+        <directory>src/resources</directory>
+        <includes>
+          <include>config.edn</include>
+          <include>uS-core-events.sql</include>
+          <include>tlds-alpha-by-domain.txt</include>
+        </includes>
+      </resource>
+    </resources>
