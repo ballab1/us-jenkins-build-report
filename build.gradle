@@ -1,14 +1,14 @@
 plugins {
   // https://github.com/gradle-clojure/gradle-clojure
-  id "gradle-clojure.clojure" version "0.4.0"
+  id "gradle-clojure.clojure" version "0.5.0-alpha.1"
 
   // http://imperceptiblethoughts.com/shadow/ 
-  id 'com.github.johnrengelman.shadow' version '2.0.4'
+  id 'com.github.johnrengelman.shadow' version '5.2.0'
 
   // https://github.com/patrikerdes/gradle-use-latest-versions-plugin
   // Usage: gradle useLatestVersions && gradle useLatestVersionsCheck
-  id 'se.patrikerdes.use-latest-versions' version '0.2.3'
-  id 'com.github.ben-manes.versions' version '0.20.0'
+  id 'se.patrikerdes.use-latest-versions' version '0.2.13'
+  id 'com.github.ben-manes.versions' version '0.27.0'
 }
 
 group = 'org.sample'

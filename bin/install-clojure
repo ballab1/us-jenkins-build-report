@@ -3,13 +3,13 @@
 echo "This script may need to be executed with 'sudo'."
 
 uname=$(uname)
-if [ $uname = "Darwin" ]; then
+if [ $uname = 'Darwin' ]; then
    brew install clojure
-elif [ $uname = "Linux" ] || [ $uname = "FreeBSD" ]; then
+elif [ "$uname" = 'Linux' ] || [ $uname = 'FreeBSD' ]; then
    clj_revision=1.9.0.394
    cd /tmp
-   curl -O https://download.clojure.org/install/linux-install-${clj_revision}.sh
-   chmod +x linux-install-${clj_revision}.sh
-   ./linux-install-${clj_revision}.sh
+   curl -O "https://download.clojure.org/install/linux-install-${clj_revision}.sh"
+   chmod +x "linux-install-${clj_revision}.sh"
+   "./linux-install-${clj_revision}.sh"
    cd -
 fi

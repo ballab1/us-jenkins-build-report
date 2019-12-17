@@ -64,17 +64,6 @@
                  <enabled>false</enabled>
              </snapshots>
          </repository>
-         <repository>
-             <id>artifactory</id>
-             <name>afeoscyc-mw.cec.lab.emc.com</name>
-             <url>https://afeoscyc-mw.cec.lab.emc.com:443/artifactory/cyclone-devops-mw</url>
-             <releases>
-                 <enabled>true</enabled>
-             </releases>
-             <snapshots>
-                 <enabled>false</enabled>
-             </snapshots>
-         </repository>
       </repositories>
     </profile>
   </profiles>

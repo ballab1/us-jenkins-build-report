@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-source $(dirname $0)/validate-kafka-env
+source "$(dirname $0)/validate-kafka-env"
 
-if [ "$kafka_home" ]; then
-   cd ${kafka_home}
+if [ "${kafka_home:-}" ]; then
+   cd "$kafka_home"
    if [ $# -eq 1 ]; then
       topic=$1
    else
@@ -11,10 +11,10 @@ if [ "$kafka_home" ]; then
       exit 1
    fi
 
-   if [ ${BOOTSTRAP_SERVERS} ]; then
-      ./bin/kafka-console-consumer.sh --bootstrap-server ${BOOTSTRAP_SERVERS} --topic ${topic} --from-beginning | jq . -C -
+   if [ "${BOOTSTRAP_SERVERS:-}" ]; then
+      ./bin/kafka-console-consumer.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --topic ${topic} --from-beginning | jq . -C -
    else
-      ./bin/kafka-console-consumer.sh --zookeeper ${ZK_HOSTS} --topic ${topic} --from-beginning | jq . -C -M -
+      ./bin/kafka-console-consumer.sh --zookeeper "$ZK_HOSTS" --topic "$topic" --from-beginning | jq . -C -M -
    fi    
 fi
 

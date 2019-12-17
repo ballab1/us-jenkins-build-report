@@ -6,62 +6,33 @@
 # configuring Kafka. In addition, setting listeners to a FQ host name
 # may not resolve correctly when multicast DNS is used. So, when setting
 # the Kafka cluster to 'local' we need to derive the host ip 'manually'.
-if [ `uname` = "Linux" ]; then
+if [ $(uname) = 'Linux' ]; then
    # If all Linux/containers supported Perl regex grep then: grep -Po 'dev \K[\w]+'
    export DEF_GW=$(ip route show | grep default | cut -d \  -f 3)
    export HOST_IF=$(ip route show | grep default | cut -d \  -f 5)
    export HOST_IP=$(ip addr show dev eth0 | grep inet | cut -d \t -f 2 | cut -d \/ -f 1 | cut -d \  -f 2)
 else
    # BSDs.
-   GW_INFO=`netstat -nr -f inet | grep -E 'default[ \t]+[0-9\.]+' | sed -E 's/[ \t]+/ /g'`
-   export DEF_GW="`echo ${GW_INFO} | cut -d \  -f 2`"
-   if [ `uname` = "Darwin" ]; then
-      export HOST_IF=`echo ${GW_INFO} | cut -d \  -f 6`
-   elif [ `uname` = "FreeBSD" ]; then
-      export HOST_IF=`echo ${GW_INFO} | cut -d \  -f 4`
+   GW_INFO=$(netstat -nr -f inet | grep -E 'default[ \t]+[0-9\.]+' | sed -E 's/[ \t]+/ /g')
+   export DEF_GW="$(echo ${GW_INFO} | cut -d \  -f 2)"
+   if [ $(uname) = "Darwin" ]; then
+      export HOST_IF=$(echo ${GW_INFO} | cut -d \  -f 6)
+   elif [ $(uname) = "FreeBSD" ]; then
+      export HOST_IF=$(echo ${GW_INFO} | cut -d \  -f 4)
    else
-      export HOST_IF="`echo ${GW_INFO} | cut -d \  -f 8`"
+      export HOST_IF="$(echo ${GW_INFO} | cut -d \  -f 8)"
    fi
-   export HOST_IP="`/sbin/ifconfig ${HOST_IF} | grep -w inet | cut -d \  -f 2`"
+   export HOST_IP="$(/sbin/ifconfig ${HOST_IF} | grep -w inet | cut -d \  -f 2)"
 fi
 
 echo "DEF_GW=$DEF_GW, HOST_IF=$HOST_IF, HOST_IP=$HOST_IP"
 
-if [ "$1" == "hop" ]; then
-   # Hopkinton cluster -- Vijay Basava  10gb Optical SLICS
-   export BOOTSTRAP_SERVERS=kafkabroker01.cec.lab.emc.com:9092,kafkabroker02.cec.lab.emc.com:9092,kafkabroker03.cec.lab.emc.com:9092
-   export ZK_HOSTS=kafkazookpr01.cec.lab.emc.com:2181,kafkazookpr02.cec.lab.emc.com:2181,kafkadbsrv01.cec.lab.emc.com:2181
-   export AVRO_HOSTS=kafkaavroschema.cec.lab.emc.com:8081
+if [ "$1" = 'home' ]; then
+   export BOOTSTRAP_SERVERS=10.1.3.6:9092,10.1.3.10:9092,10.1.3.11:9092
+   export ZK_HOSTS=10.1.3.6:2181,10.1.3.10:2181,10.1.3.11:2181
+   export AVRO_HOSTS=10.1.3.11:8081
    export KAFKA_CLUSTER=$1
-elif [ "$1" == "dur" ]; then
-   # Durham cluster -- Steve Vedell RITM0259942
-   #        broker1.cec.lab.emc.com  (10.207.113.56)
-   #        broker2.cec.lab.emc.com  (10.207.113.53)
-   #        broker3.cec.lab.emc.com  (10.207.113.55)
-   #        zookeeper.cec.lab.emc.com  (10.207.113.52)
-   #        zookeeper2.cec.lab.emc.com  (10.207.113.54)
-   #        avro-schema.cec.lab.emc.com  (10.207.113.50)
-   export BOOTSTRAP_SERVERS=broker1.cec.lab.emc.com:9092,broker2.cec.lab.emc.com:9092,broker3.cec.lab.emc.com:9092
-   export ZK_HOSTS=zookeeper.cec.lab.emc.com:2181,zookeeper2.cec.lab.emc.com:2181,broker1.cec.lab.emc.com:2181
-   export AVRO_HOSTS=avro-schema.cec.lab.emc.com
-   export KAFKA_CLUSTER=$1
-elif [ "$1" == "dev" ]; then
-   dev_cluster=10.244.102.59
-   export BOOTSTRAP_SERVERS=${dev_cluster}:9092
-   export ZK_HOSTS=${dev_cluster}:2181
-   export AVRO_HOSTS=${dev_cluster}
-   export KAFKA_CLUSTER=$1
-elif [ "$1" == "host" ]; then
-   if [ "$2" != "" ]; then
-      host_cluster=$2
-   else
-      host_cluster=192.168.9.1
-   fi
-   export BOOTSTRAP_SERVERS=${host_cluster}:9092
-   export ZK_HOSTS=${host_cluster}:2181
-   export AVRO_HOSTS=${host_cluster}
-   export KAFKA_CLUSTER=$1
-elif [ "$1" == "localhost" ]; then
+elif [ "$1" = 'localhost' ]; then
    # Broker's server.properties file's 'listener' is set to listen on the
    # hostname's FQ name instead of merely localhost.
    export BOOTSTRAP_SERVERS=$HOST_IP:9092
@@ -69,7 +40,7 @@ elif [ "$1" == "localhost" ]; then
    export AVRO_HOSTS=$HOST_IP
    export KAFKA_CLUSTER=$1
 else
-   echo ""
-   echo "Usage: source $(dirname $0)/set-kafka-cluster dev|dur|hop|host [ip]|local"
-   echo ""
+   echo
+   echo "Usage: source $(dirname $0)/set-kafka-cluster home|host [ip]|local"
+   echo
 fi

@@ -2,7 +2,5 @@
 curl -H "Origin: http://$(hostname -f)" -v \
 http://localhost:8888/
 #http://localhost:8888/about
-#http://usenhendrr2m1.local:8888/
-#http://usenhendrr2m1.local:8888/about
 #http://qbox.local:8888/
 #http://qbox.local:8888/about

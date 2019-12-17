@@ -6,8 +6,8 @@
 #
 
 # Ensure we're using the system jdk
-if [ `uname` = "Darwin" ]; then
-   JAVA_HOME=`/usr/libexec/java_home -v 10`
+if [ $(uname) = 'Darwin' ]; then
+   JAVA_HOME=$(/usr/libexec/java_home -v 10)
    PATH=${JAVA_HOME}/bin:$PATH
 fi
 

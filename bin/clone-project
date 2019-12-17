@@ -5,7 +5,7 @@ usage() {
 'target_dir', renaming elements in files and filenames from 'from' to 'to'.
 "
    echo "Usage: $0 target_dir [[from] to]"
-   echo ""
+   echo
 }
 
 orig_dir=$PWD
@@ -13,8 +13,8 @@ dest_dir=$1
 
 if [ $# -eq 1 ]; then
    # Destination directory tail part is the project name
-   proj_name=${dest_dir##*/}
-   from=${orig_dir##*/}
+   proj_name="${dest_dir##*/}"
+   from="${orig_dir##*/}"
 elif [ $# -eq 2 ]; then
    # Provided name
    from=$1
@@ -26,9 +26,9 @@ fi
 
 echo "PROJECT_NAME $proj_name"
 
-rsync -rv --exclude=.git --exclude-from etc/generated-artifacts . $dest_dir
+rsync -rv --exclude=.git --exclude-from etc/generated-artifacts . "$dest_dir"
 
-cd $dest_dir
+cd "$dest_dir"
 
 to=$proj_name
 

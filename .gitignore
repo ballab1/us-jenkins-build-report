@@ -81,3 +81,9 @@ deploy/
 .app-name
 .manifest
 **/version.edn
+
+.bash_history
+.clojure/
+.m2/
+
+

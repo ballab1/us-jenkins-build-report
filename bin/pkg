@@ -16,21 +16,21 @@
 # install gradle or maven.
 
 # Ensure we are executing in the project directory.
-cd $(dirname $0)/..
+cd "$(dirname $0)/.."
 
 source etc/utils.shlib
 set_revision
 
 # Prepare env
 target_dir=.classes
-rm -rf $target_dir
-[ -d $target_dir ] || mkdir $target_dir
+rm -rf "$target_dir"
+[ -d "$target_dir" ] || mkdir "$target_dir"
 
-if [ -z ${PKG_DIR} ]; then
+if [ -z "$PKG_DIR" ]; then
   PKG_DIR=deploy
 fi
 
-if [ -z ${MAIN_NS} ]; then
+if [ -z "${MAIN_NS:-}" ]; then
   MAIN_NS=$1
 fi
 
@@ -40,17 +40,17 @@ function extract_dependencies() {
    # a previous version upon collision. Reverse process the list to match what a
    # classloader would see.
    manifest_cp=()
-   files=(${1//:/ })
-   cd $target_dir;
-   for (( i=${#files[@]}-1;i>=0;i-- )); do
-      file=${files[i]}
-      if [ -f $file ]; then
+   files=( ${1//:/ } )
+   cd "$target_dir"
+   for (( i=${#files[@]}-1; i>=0 ;i-- )); do
+      file="${files[i]}"
+      if [ -f "$file" ]; then
          echo "Extracting: $file into $target_dir"
          manifest_cp+=" ${file##*/} \n"
-         jar xf $file
+         jar xf "$file"
       fi
    done
-   sorted_manifest_cp=$(printf "$manifest_cp" | sort)
+   sorted_manifest_cp="$(printf "$manifest_cp" | sort)"
    cd ..
 }
 
@@ -72,14 +72,14 @@ function package() {
    # Remove any file in $target_dir coming from the decompressed jars that is also
    # in src/resources as the latter will need to override these in the uber jar.
    for file in $(ls src/resources); do
-      find $target_dir -type f -name $file -exec rm {} \;
+      find "$target_dir" -type f -name "$file" -delete
    done
 
    # Create the project's uberjar including project class files, resources and jar class files.
-   [ -d $PKG_DIR ] || mkdir $PKG_DIR
+   [ -d "$PKG_DIR" ] || mkdir "$PKG_DIR"
    jar_name="$PKG_DIR/$(cat .app-name)-$(cat .revision).jar"
    echo "Creating $jar_name"
-   jar cmf $manifest $jar_name -C src/resources . -C $target_dir .
+   jar cmf $manifest "$jar_name" -C src/resources . -C "$target_dir" .
 }
 
 function find_project_namespaces() {
@@ -98,7 +98,7 @@ function compile() {
    # Compile the project's namespaces like msa.core. WARNING compiled project
    # classes will overwrite decompressed jars classes upon collision.
    echo "namespaces=$(find_project_namespaces)"
-   java -cp $target_dir:$1 -Dclojure.compile.path=$target_dir clojure.lang.Compile $(find_project_namespaces)
+   java -cp "${target_dir}:$1" -Dclojure.compile.path=$target_dir clojure.lang.Compile $(find_project_namespaces)
 }
 
 function compile_and_package() {
@@ -106,8 +106,8 @@ function compile_and_package() {
    # Get the project's classpath
    local cpath=$(clj -Spath)
 
-   extract_dependencies $cpath
-   compile $cpath
+   extract_dependencies "$cpath"
+   compile "$cpath"
 
    create_manifest
    package

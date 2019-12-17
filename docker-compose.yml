@@ -1,0 +1,101 @@
+version: '3.5'
+
+services:
+    clojure:
+        container_name: clojure
+        entrypoint: /bin/cat
+        hostname: clojure
+        image: clojure:latest
+        logging:
+            driver: json-file
+            options:
+                max-file: "3"
+                max-size: "10m"
+        networks:
+            - us-net 
+        stdin_open: true
+        tty: true
+        volumes:
+            - ./:/usr/src/app
+            - /var/run/docker.sock:/var/run/docker.sock
+        working_dir: /usr/src/app
+
+#    docker:
+#        container_name: docker
+#        entrypoint: /bin/cat
+#        hostname: docker
+#        image: docker:latest
+#        logging:
+#            driver: json-file
+#            options:
+#                max-file: "3"
+#                max-size: "10m"
+#        networks:
+#            - us-net 
+#        stdin_open: true
+#        tty: true
+#        volumes:
+#            - ./:/usr/src/app
+#            - /var/run/docker.sock:/var/run/docker.sock
+#        working_dir: /usr/src/app
+
+    gradle:
+        container_name: gradle
+        entrypoint: /bin/cat
+        hostname: gradle
+        image: gradle:latest
+        logging:
+            driver: json-file
+            options:
+                max-file: "3"
+                max-size: "10m"
+        networks:
+            - us-net 
+        stdin_open: true
+        tty: true
+        volumes:
+            - ./:/usr/src/app
+            - /var/run/docker.sock:/var/run/docker.sock
+        working_dir: /usr/src/app
+
+    java:
+        container_name: java
+        entrypoint: /bin/cat
+        hostname: clojure
+        image: java:latest
+        logging:
+            driver: json-file
+            options:
+                max-file: "3"
+                max-size: "10m"
+        networks:
+            - us-net 
+        stdin_open: true
+        tty: true
+        volumes:
+            - ./:/usr/src/app
+            - /var/run/docker.sock:/var/run/docker.sock
+        working_dir: /usr/src/app
+
+    maven:
+        container_name: maven
+        entrypoint: /bin/cat
+        hostname: mvn
+        image: maven:latest
+        logging:
+            driver: json-file
+            options:
+                max-file: "3"
+                max-size: "10m"
+        networks:
+            - us-net 
+        stdin_open: true
+        tty: true
+        volumes:
+            - ./:/usr/src/app
+            - /var/run/docker.sock:/var/run/docker.sock
+        working_dir: /usr/src/app
+
+networks:
+   us-net:
+       name: us-container-net
