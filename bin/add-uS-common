@@ -1,3 +1,5 @@
+#! /usr/bin/env bash
+
 # https://git-scm.com/book/en/v1/Git-Tools-Subtree-Merging
 # https://medium.com/@porteneuve/mastering-git-subtrees-943d29a798ec
 

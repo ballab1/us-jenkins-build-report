@@ -42,10 +42,10 @@
   ; Have SLF4J delegate to timbre
   ;com.fzakaria/slf4j-timbre {:mvn/version "0.3.14" :exclusions [org.clojure/clojure com.taoensso/timbre org.slf4j/impl org.slf4j/slf4j-nop]}
   ; Make sure all other logging APIs are wrapped by SLF4J by including:
-  org.slf4j/slf4j-nop {:mvn/version "1.7.29"}      ; http://www.slf4j.org/codes.html#StaticLoggerBinder
-  org.slf4j/jul-to-slf4j {:mvn/version "1.7.29"}
-  org.slf4j/jcl-over-slf4j {:mvn/version "1.7.29"}
-  org.slf4j/log4j-over-slf4j {:mvn/version "1.7.29"}
+  org.slf4j/slf4j-nop {:mvn/version "1.7.30"}      ; http://www.slf4j.org/codes.html#StaticLoggerBinder
+  org.slf4j/jul-to-slf4j {:mvn/version "1.7.30"}
+  org.slf4j/jcl-over-slf4j {:mvn/version "1.7.30"}
+  org.slf4j/log4j-over-slf4j {:mvn/version "1.7.30"}
 
   ;; Database
   seancorfield/next.jdbc {:mvn/version "1.0.12" :exclusions [org.clojure/clojure]}

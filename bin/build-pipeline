@@ -1,3 +1,5 @@
+#! /usr/bin/env bash
+
 revision=$(git describe --tag --dirty)
 app=${PWD##*/}
 target="target/lib/$app-$revision"

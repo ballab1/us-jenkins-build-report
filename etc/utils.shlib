@@ -27,7 +27,7 @@ function jenv() {
 }
 
 # 'brew install coreutils' on OSX.
-function random_unused_port {
+function random_unused_port() {
    if [ `uname` = "Darwin" ]; then
       shuffle=gshuf
       ns_options='-f inet -p tcp'
@@ -61,6 +61,13 @@ function gen_proj_pom() {
   <groupId>com.dell.spe.mres</groupId>
   <artifactId>$APP</artifactId>
   <version>$REVISION</version>
+  <dependencies>
+    <dependency>
+        <groupId>org.clojure</groupId>
+        <artifactId>clojure</artifactId>
+        <version>1.5.0</version>
+    </dependency>
+  </dependencies>
 </project>" > ${FQ_APP_NS}.pom
 }
 

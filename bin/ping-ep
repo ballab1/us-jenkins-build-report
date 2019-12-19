@@ -1,3 +1,5 @@
+#! /usr/bin/env bash
+
 # First test if hostname:port is accesible by using: nc -zv hostname port
 curl -H "Origin: http://$(hostname -f)" -v \
 http://localhost:8888/

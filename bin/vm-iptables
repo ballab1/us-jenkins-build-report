@@ -1,3 +1,5 @@
+#! /usr/bin/env bash
+
 # http port for github hook uS is 8889
 # Zookeeper port is 2181
 # Bootstrap server ports 9092:9094

@@ -1,3 +1,5 @@
+#! /usr/bin/env bash
+
 # https://stackoverflow.com/questions/40297499/pushing-squashed-subtree-change-to-gerrit
 # This command re-writes the history after doing a git subtree {pull|add}
 # to add Gerrit Change-Id lines to the squash commit message.
