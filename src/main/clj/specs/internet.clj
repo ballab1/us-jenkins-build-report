@@ -1,5 +1,10 @@
 (ns specs.internet
   "Provides fns and specs for common representations of Internet-related values"
+  {:clj-kondo/config
+   ^:replace {:linters {:redundant-do {:level :info}
+                        #_#_:redundant-let {:level :off}}
+              #_#_:lint-as {clojure.test.check.generators/let let}}}
+
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.spec.alpha :as s]
@@ -13,22 +18,22 @@
   (letfn [(pred [s]
             (re-matches #"\A(?:\p{Alnum}|\p{Alnum}(?:\p{Alnum}|-)*\p{Alnum})\z" s))
           (gen []
-            (let [middle-char (gen/fmap char
-                                        (gen/one-of [(gen/choose 48 57)
-                                                     (gen/choose 65 90)
-                                                     (gen/choose 97 122)
-                                                     (gen/return 45)]))]
-              (gen/let [length (gen/choose 1 64)]
-                (let [chars-gen (if (= 1 length)
-                                  (gen/vector gen/char-alphanumeric 1)
-                                  (gen/let [first-char gen/char-alphanumeric
-                                            last-char gen/char-alphanumeric
-                                            middle-chars (gen/vector middle-char
-                                                                     (- length 2))]
-                                    (gen/return (-> [first-char]
-                                                    (into middle-chars)
-                                                    (conj last-char)))))]
-                  (gen/fmap string/join chars-gen)))))]
+               (let [middle-char (gen/fmap char
+                                           (gen/one-of [(gen/choose 48 57)
+                                                        (gen/choose 65 90)
+                                                        (gen/choose 97 122)
+                                                        (gen/return 45)]))]
+                 (gen/let [length (gen/choose 1 64)]
+                   (let [chars-gen (if (= 1 length)
+                                     (gen/vector gen/char-alphanumeric 1)
+                                     (gen/let [first-char gen/char-alphanumeric
+                                               last-char gen/char-alphanumeric
+                                               middle-chars (gen/vector middle-char
+                                                                        (- length 2))]
+                                       (gen/return (-> [first-char]
+                                                       (into middle-chars)
+                                                       (conj last-char)))))]
+                     (gen/fmap string/join chars-gen)))))]
     (s/spec pred :gen gen)))
 
 (defn hostname
@@ -57,21 +62,21 @@
                           (or (not domain-re)
                               (re-find domain-re (string/lower-case s)))))))
             (gen []
-              (let [min-needed (or min-depth 2)
-                    max-needed (or max-depth 4)
-                    domain-part (when (seq domains)
-                                  (gen/elements domains))]
-                (if domain-part
-                  (gen/let [domain domain-part]
-                    (let [domain-count (count (string/split domain #"\."))
-                          parts-gen (gen/vector (s/gen hostpart-spec)
-                                                (- min-needed domain-count)
-                                                (- max-needed domain-count))]
-                      (gen/let [parts parts-gen]
-                        (gen/return (string/join "." (conj parts domain))))))
-                  (let [parts-gen (gen/vector (s/gen hostpart-spec)
-                                              min-needed max-needed)]
-                    (gen/fmap (partial string/join ".") parts-gen)))))]
+                 (let [min-needed (or min-depth 2)
+                       max-needed (or max-depth 4)
+                       domain-part (when (seq domains)
+                                     (gen/elements domains))]
+                   (if domain-part
+                     (gen/let [domain domain-part]
+                       (let [domain-count (count (string/split domain #"\."))
+                             parts-gen (gen/vector (s/gen hostpart-spec)
+                                                   (- min-needed domain-count)
+                                                   (- max-needed domain-count))]
+                         (gen/let [parts parts-gen]
+                           (gen/return (string/join "." (conj parts domain))))))
+                     (let [parts-gen (gen/vector (s/gen hostpart-spec)
+                                                 min-needed max-needed)]
+                       (gen/fmap (partial string/join ".") parts-gen)))))]
       (s/spec pred :gen gen))))
 
 (def tlds
@@ -106,7 +111,7 @@
                                (catch Exception _ false)))
                            parts))))
           (gen []
-            (gen/fmap (partial string/join ".") (gen/vector (gen/choose 0 255) 4)))]
+               (gen/fmap (partial string/join ".") (gen/vector (gen/choose 0 255) 4)))]
     (s/spec pred :gen gen)))
 
 (s/def ::ip-port
@@ -131,7 +136,7 @@
                    (every? dot-chars s)
                    (not (re-find #"\.\." s))))
             (gen []
-              (gen/fmap string/join (gen/vector (gen/elements chars) 1 64)))]
+                 (gen/fmap string/join (gen/vector (gen/elements chars) 1 64)))]
       (s/spec pred :gen gen))))
 
 (defn email-address
@@ -148,11 +153,11 @@
                        (contains? hosts (string/lower-case (second parts)))
                        (s/valid? hostname-spec (second parts))))))
             (gen []
-              (gen/let [local-part (s/gen local-spec)
-                        hostname-part (if (seq hosts)
-                                        (gen/elements hosts)
-                                        (s/gen hostname-spec))]
-                (gen/return (str local-part "@" hostname-part))))]
+                 (gen/let [local-part (s/gen local-spec)
+                           hostname-part (if (seq hosts)
+                                           (gen/elements hosts)
+                                           (s/gen hostname-spec))]
+                   (gen/return (str local-part "@" hostname-part))))]
       (s/spec pred :gen gen))))
 
 (s/def ::email-address
@@ -175,12 +180,12 @@
                            (contains? hosts (.getHost uri)))))
                 (catch Exception _ false)))
             (gen []
-              (let [schemes (or schemes #{"http" "https"})]
-                (gen/let [scheme (gen/elements schemes)
-                          host (if (seq hosts)
-                                 (gen/elements hosts)
-                                 (s/gen ::fully-qualified-hostname))]
-                  (str scheme "://" host "/"))))]
+                 (let [schemes (or schemes #{"http" "https"})]
+                   (gen/let [scheme (gen/elements schemes)
+                             host (if (seq hosts)
+                                    (gen/elements hosts)
+                                    (s/gen ::fully-qualified-hostname))]
+                     (str scheme "://" host "/"))))]
       (s/spec pred :gen gen))))
 
 (s/def ::web-url

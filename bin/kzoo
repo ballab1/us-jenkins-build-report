@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 
-if [ -z "${KAFKA_HOME:-}" ]; then
-   kafka_bin="$(find ~/tools/kafka_* -type d -name bin)"
-   if [ -z "${kafka_bin:-}" ]; then
+if [ -z ${KAFKA_HOME} ]; then
+   kafka_bin=$(find ~/tools/kafka_* -type d -name bin)
+   if [ -z ${kafka_bin} ]; then
       echo "Cannot find or set KAFKA_HOME"
       exit 1
    else
-      kafka_home="${kafka_bin%%/bin}"
+      kafka_home=${kafka_bin%%/bin}
    fi
 else
-   kafka_home="$KAFKA_HOME"
+   kafka_home=${KAFKA_HOME}
 fi
 
 echo "kafka_home = $kafka_home"
-echo $(java -version)
-cd "$kafka_home"
+echo `java -version`
+cd $kafka_home
 ./bin/zookeeper-server-start.sh -daemon config/zookeeper.properties
 cd -

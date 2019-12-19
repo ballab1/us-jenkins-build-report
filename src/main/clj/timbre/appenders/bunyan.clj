@@ -3,13 +3,16 @@
   To view generated logs in human friendly format use the the bunyan CLI utility.
   Simply install with 'npm i -g bunyan'
   Then 'run dev | bunyan' or 'bunyan some-log-file' "
+  {:clj-kondo/config
+   '{:linters {:unresolved-symbol {:exclude [(timbre.appenders.bunyan [logger])]}}}}
   (:require [cheshire.core :as json]
             [config.env :as cfg]
             [clojure.string :as string]
+            [mount.core :as mount]
             [taoensso.timbre :as log]
+            [taoensso.timbre.appenders.core :as tac]
             #_[taoensso.timbre.appenders.3rd-party.rolling :as rol-app]
-            [taoensso.timbre.appenders.3rd-party.rotor :as rot-app]
-            )
+            [taoensso.timbre.appenders.3rd-party.rotor :as rot-app])
   (:gen-class))
 
 ; Intern log level macros as to appear belonging to this name space.
@@ -21,6 +24,8 @@
 (intern 'timbre.appenders.bunyan (with-meta 'error {:macro true}) @#'taoensso.timbre/error)
 (intern 'timbre.appenders.bunyan (with-meta 'fatal {:macro true}) @#'taoensso.timbre/fatal)
 
+(def spy #(do (println "DEBUG:" %) %))
+
 (def bunyan-levels
   "Maps a logging level keyword into a bunyan integer level"
   {:trace 10
@@ -30,47 +35,43 @@
    :error 50
    :fatal 60})
 
-(def app-name
-  "Get cached app-name"
-  (memoize (fn [data] (str (get-in data [:config :app-name]) "-" (cfg/revision)))))
+(def bunyan-logger (atom nil))
 
-(def currentPID
-  "Get current process PID"
-  (memoize
-    (fn []
-      (-> (java.lang.management.ManagementFactory/getRuntimeMXBean)
-          (.getName)
-          (string/split #"@")
-          (first)))))
-
-(defn bunyan-log-output
-  "Function which formats a log command into a bunyan compatible json string",
-  ([data] (bunyan-log-output nil data))
-  ([opts data]
-   (let [{:keys [no-stacktrace? stacktrace-fonts]} opts
-         {:keys [pid level ?err msg_ ?ns-str ?file hostname_ timestamp_ ?line]} data
-         stack (when-not no-stacktrace? (when-let [err ?err] {:stack (log/stacktrace err opts)}))]
-     #_(println opts)
-     #_(println data)
-     (json/generate-string (merge (:context data)
-                            {:v 0
-                             :name (app-name data)
-                             :pid (currentPID)
-                             :hostname (force hostname_)
-                             :time (force timestamp_)
-                             :msg (force msg_)
-                             :level (level bunyan-levels)}
-                            (if (some? ?line) {:src {:file ?file :line ?line :namespace ?ns-str}} {})
-                            (if (some? stack) {:err stack} {}))))))
+(defn init-bunyan-logger []
+  (reset! bunyan-logger
+          (let [currentPID (-> (java.lang.management.ManagementFactory/getRuntimeMXBean)
+                               (.getName)
+                               #_spy
+                               (string/split #"@")
+                               (first))
+                name (cfg/app-name)]
+            (fn
+              ([data] (@bunyan-logger nil data))
+              ([opts data]
+               (let [{:keys [no-stacktrace? _stacktrace-fonts]} opts
+                     {:keys [_pid level ?err msg_ ?ns-str ?file hostname_ timestamp_ ?line]} data
+                     stack (when-not no-stacktrace? (when-let [err ?err] {:stack (log/stacktrace err opts)}))]
+                 #_(println opts)
+                 #_(println data)
+                 (json/generate-string (merge (:context data)
+                                              {:v 0
+                                               :name name
+                                               :pid currentPID
+                                               :hostname (force hostname_)
+                                               :time (force timestamp_)
+                                               :msg (force msg_)
+                                               :level (level bunyan-levels)}
+                                              (if (some? ?line) {:src {:file ?file :line ?line :namespace ?ns-str}} {})
+                                              (if (some? stack) {:err stack} {})))))))))
 
 (def iso-pattern "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
 
 (defn bunyan-appender
   "Returns a Timbre appender which emits bunyan compatible json strings to stdout"
   []
-  (assoc (taoensso.timbre.appenders.core/println-appender)
+  (assoc (tac/println-appender)
          :timestamp-opts {:pattern iso-pattern}
-         :output-fn bunyan-log-output
+         :output-fn @bunyan-logger
          :min-level (cfg/timbre-log-level)
          :ns-whitelist (cfg/timbre-ns-whitelist)
          :ns-blacklist (cfg/timbre-ns-blacklist)))
@@ -78,16 +79,16 @@
 (defn bunyan-spit-appender
   "Returns a Timbre appender which emits bunyan compatible json strings to a log-file"
   [log-file]
-  (assoc (taoensso.timbre.appenders.core/spit-appender {:fname log-file})
+  (assoc (tac/spit-appender {:fname log-file})
          :timestamp-opts {:pattern iso-pattern}
-         :output-fn bunyan-log-output))
+         :output-fn @bunyan-logger))
 
 #_(defn bunyan-rolling-appender
-  "Returns a Timbre appender which emits bunyan compatible json strings to a daily rolling log-file"
-  [log-file]
-  (assoc (rol-app/rolling-appender {:path log-file})
-         :timestamp-opts {:pattern iso-pattern}
-         :output-fn bunyan-log-output))
+    "Returns a Timbre appender which emits bunyan compatible json strings to a daily rolling log-file"
+    [log-file]
+    (assoc (rol-app/rolling-appender {:path log-file})
+           :timestamp-opts {:pattern iso-pattern}
+           :output-fn @bunyan-logger))
 
 (defn bunyan-rotor-appender
   "Returns a rotating file appender."
@@ -96,7 +97,7 @@
               backlog 5}}]]
   (assoc (rot-app/rotor-appender {:path path :max-size max-size :backlog backlog})
          :timestamp-opts {:pattern iso-pattern}
-         :output-fn bunyan-log-output
+         :output-fn @bunyan-logger
          :min-level (cfg/timbre-log-level)
          :ns-whitelist (cfg/timbre-ns-whitelist)
          :ns-blacklist (cfg/timbre-ns-blacklist)))
@@ -104,29 +105,38 @@
 ; Configure timbre bunyan logging
 ;
 
-; name of the app logged in the JSON 'name' field.
-(log/merge-config! {:app-name (cfg/client-id)})
+(defn init-logger []
+  (init-bunyan-logger)
 
-; Set Zulu timestamp format for all loggers
-(log/merge-config! {:timestamp-opts {:pattern "[yyyy-MM-dd'T'HH:mm:ss.SSS'Z']",
-                                     :locale :jvm-default, :timezone :utc}})
+  ; Set Zulu timestamp format for all loggers
+  (log/merge-config! {:timestamp-opts {:pattern "[yyyy-MM-dd'T'HH:mm:ss.SSS'Z']",
+                                       :locale :jvm-default, :timezone :utc}})
 
-; Disable the default stdout logger from timbre
-(log/merge-config! {:appenders {:println nil}})
+   ; Disable the default stdout logger from timbre
+  (log/merge-config! {:appenders {:println nil}})
 
-; Create bunyan loggers for stdout and a log file
-(log/merge-config! {:appenders {:bunyan (bunyan-appender)}})
+   ; Create bunyan loggers for stdout and a log file
+  (log/merge-config! {:appenders {:bunyan (bunyan-appender)}})
 
-#_(log/merge-config! {:appenders {:bunyan-spit (bunyan-spit-appender
-                                                 (str (cfg/log-dir) (when-not (string/ends-with? (cfg/log-dir) "/") "/")
-                                                      (cfg/client-id) ".log"))}})
-#_(log/merge-config! {:appenders {:bunyan-rolling (bunyan-rolling-appender
-                                                    (str (cfg/log-dir) (when-not (string/ends-with? (cfg/log-dir) "/") "/")
-                                                         (cfg/client-id) "-rolling.log"))}})
+  #_(log/merge-config! {:appenders
+                        {:bunyan-spit
+                         (bunyan-spit-appender
+                          (str (cfg/log-dir) (when-not (string/ends-with? (cfg/log-dir) "/") "/")
+                               (cfg/client-id) ".log"))}})
 
-(log/merge-config! {:appenders {:bunyan-rotor (bunyan-rotor-appender
-                                                {:path (str (cfg/log-dir) (when-not (string/ends-with? (cfg/log-dir) "/") "/")
-                                                            (cfg/client-id) ".log")
-                                                 :max-size (cfg/max-log-size-bytes)
-                                                 :backlog (cfg/max-log-files)})}})
-#_(print log/*config*)
+  #_(log/merge-config! {:appenders
+                        {:bunyan-rolling
+                         (bunyan-rolling-appender
+                          (str (cfg/log-dir) (when-not (string/ends-with? (cfg/log-dir) "/") "/")
+                               (cfg/client-id) "-rolling.log"))}})
+
+  (log/merge-config! {:appenders
+                      {:bunyan-rotor
+                       (bunyan-rotor-appender
+                        {:path (str (cfg/log-dir) (when-not (string/ends-with? (cfg/log-dir) "/") "/")
+                                    (cfg/client-id) ".log")
+                         :max-size (cfg/max-log-size-bytes)
+                         :backlog (cfg/max-log-files)})}}))
+
+(mount/defstate logger
+  :start (init-logger))

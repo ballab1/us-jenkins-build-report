@@ -1,0 +1,43 @@
+usage() {
+   echo "Usage:"
+   echo "   hard-delete-topic cluster-name topic-name"
+   echo ""
+   echo "Execute this script ONLY after all kafka brokers"
+   echo "in the cluster are halted and the \"topic-name\""
+   echo "has been deleted on disk for each of the brokers"
+   echo "in the cluster!"
+}
+
+if [ $# != 2 ]; then
+   usage
+   exit -1
+fi
+
+# Provide cluster name
+cluster=$1
+
+# Provide topic name
+topic=$2
+
+source ~/bin/set-kafka-cluster $cluster
+# See: https://github.com/darrenfu/bigdata/issues/6
+# Delete in production
+# *** The only way to delete a topic permanently is as follows: ***
+# stop the brokers
+#    sudo supervisorctl stop kafka-broker | docker-compose down
+# remove the directories on disk
+#    sudo rm -rf <kafka_data_dir>/<topic_name>*
+# remove the topic from zookeeper:
+
+# Set Internal Field Separator to a comma so ZK_HOSTS provides individual
+# hostnames instead of one long string.
+IFS=','
+# ZK_HOSTS includes port numbers
+for zk in ${ZK_HOSTS}; do
+   echo "Executing rmr /config/topics/$topic on $zk for cluster $cluster"
+   ${KAFKA_HOME}/bin/zookeeper-shell.sh $zk rmr /config/topics/$topic
+   echo "Executing rmr /brokers/topics/$topic on $zk for cluster $cluster"
+   ${KAFKA_HOME}/bin/zookeeper-shell.sh $zk rmr /brokers/topics/$topic
+   echo "Executing rmr /admin/delete_topics/$topic on $zk for cluster $cluster"
+   ${KAFKA_HOME}/bin/zookeeper-shell.sh $zk rmr /admin/delete_topics/$topic
+done

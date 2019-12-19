@@ -12,8 +12,9 @@
   ;; under resources i.e. resources/public. "resources" needs to be
   ;; in the classpath.
   (route/resources "/" {:root "public"})
-  (GET "/" [] (-> (response/resource-response "index.html" {:root "public"})
-                  (response/content-type "text/html")))
+  (GET "/" [] (response/content-type
+               (response/resource-response "index.html" {:root "public"})
+               "text/html"))
   (GET "/hello" [] "Hello World!")
   (route/not-found "Not Found!"))
 

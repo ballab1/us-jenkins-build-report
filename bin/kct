@@ -3,7 +3,7 @@
 usage() {
    echo "Create a topic with a specific replication factor."
    echo "Usage: $0 topic-name replication-factor"
-   echo
+   echo ""
 }
 
 if [ ! $# -eq 2 ]; then
@@ -11,11 +11,11 @@ if [ ! $# -eq 2 ]; then
    exit -1
 fi
 
-source "$(dirname $0)/validate-kafka-env"
+source $(dirname $0)/validate-kafka-env
 
-if [ "${kafka_home:-}" ]; then
-   cd "$kafka_home"
-   ./bin/kafka-topics.sh --create --zookeeper "$ZK_HOSTS" --replication-factor $2 --partitions 1 --topic $1
+if [ "$kafka_home" ]; then
+   cd ${kafka_home}
+   ./bin/kafka-topics.sh --create --zookeeper $ZK_HOSTS --replication-factor $2 --partitions 1 --topic $1
 fi
 
 # vim: ft=sh

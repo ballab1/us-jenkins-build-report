@@ -1,0 +1,22 @@
+# http port for github hook uS is 8889
+# Zookeeper port is 2181
+# Bootstrap server ports 9092:9094
+
+# Insert at positions 1,2 & 3 of the INPUT chain
+sudo iptables -I INPUT 1 -p tcp --dport 8889 -j ACCEPT
+sudo iptables -I INPUT 2 -p tcp --dport 2181 -j ACCEPT
+sudo iptables -I INPUT 3 -p tcp --dport 9092:9094 -j ACCEPT
+
+# Insert at positions 1,2 & 3 of the OUTPUT chain
+sudo iptables -I OUTPUT 1 -p tcp --dport 8889 -j ACCEPT
+sudo iptables -I OUTPUT 2 -p tcp --dport 2181 -j ACCEPT
+sudo iptables -I OUTPUT 3 -p tcp --dport 9092:9094 -j ACCEPT
+
+# Insert at positions 1,2 & 3 of the DOCKER-ISOLATION chain
+# Else all packets will drop without generating an exception on the uS
+# suggesting JSON was delivered to Kafka even when it was not.
+sudo iptables -I DOCKER-ISOLATION 1 -p tcp --dport 8889 -j ACCEPT
+sudo iptables -I DOCKER-ISOLATION 2 -p tcp --dport 2181 -j ACCEPT
+sudo iptables -I DOCKER-ISOLATION 3 -p tcp --dport 9092:9094 -j ACCEPT
+
+sudo iptables -L -n

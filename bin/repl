@@ -3,19 +3,19 @@
 if [[ ! (-f .repl-port) ]]; then
    if [[ ! $1 ]]; then
       echo ".repl-port file not found!"
-      echo
+      echo ""
       echo "Usage: repl [port]"
       exit -1
    else
       port=$1
    fi
 else
-   port=$(< .repl-port)
+   port=`cat .repl-port`
 fi
 
-echo
+echo ""
 echo ":repl/quit or :cljs/quit to EXIT!"
-echo
+echo ""
 
-#rlwrap telnet 127.0.0.1 $(< .repl-port)
+#rlwrap telnet 127.0.0.1 `cat .repl-port`
 rlwrap telnet 127.0.0.1 $port

@@ -1,0 +1,2 @@
+clojure -Adeps:outdated --update "$@"
+#clojure -Aoutdated --update "$@"

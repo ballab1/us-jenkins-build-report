@@ -1,0 +1,20 @@
+# https://git-scm.com/book/en/v1/Git-Tools-Subtree-Merging
+# https://medium.com/@porteneuve/mastering-git-subtrees-943d29a798ec
+
+# Assume Gerrit is on the same host. Change if otherwise.
+git remote add uS-common ssh://${USER}@${HOSTNAME}:29418/uS-common
+git fetch uS-common
+git checkout -b bin-branch uS-common/bin
+git checkout master
+git checkout -b etc-branch uS-common/etc
+git checkout master
+git checkout -b src/dev-branch uS-common/src/dev
+git checkout master
+#git rm -rf bin
+#git read-tree --prefix=bin -u bin-branch
+#git rm -rf etc
+#git read-tree --prefix=etc -u etc-branch
+#git rm -rf src/dev
+#git read-tree --prefix=src/dev -u src/dev-branch
+git remote -v
+git branch -av

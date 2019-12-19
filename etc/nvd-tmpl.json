@@ -1,0 +1,13 @@
+{
+  "name": ,
+  "version": ,
+  "delete-config?": false,
+  "exit-after-check": false,
+  "nvd": {
+    "data-directory": "../.nvd",
+    "fail-threshold": 11,
+    "verbose-summary": true
+  },
+  "classpath": ,
+  "cmd-args": null
+}

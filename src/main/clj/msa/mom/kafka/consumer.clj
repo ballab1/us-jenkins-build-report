@@ -1,14 +1,18 @@
 ;; https://techblog.roomkey.com/index.html
 ;; http://www.confluent.io/blog/tutorial-getting-started-with-the-new-apache-kafka-0.9-consumer-client
 (ns msa.mom.kafka.consumer
+  {:clj-kondo/config
+   '{:linters {:unresolved-symbol {:exclude [(msa.mom.kafka.consumer [kafka-consumer])]}}}}
   (:require [cheshire.core :as json]
             [cognitect.transit :as transit]
             [config.env :as cfg]
+            [mount.core :as mount]
             [msgpack.core :as msg]
             [taoensso.nippy :as nippy]
             [timbre.appenders.bunyan :as log])
   (:import (java.io ByteArrayInputStream)
            (java.net InetAddress)
+           (java.time Duration)
            (java.time Instant)
            (org.apache.kafka.clients.consumer ConsumerRecord KafkaConsumer
                                               OffsetAndMetadata)
@@ -18,31 +22,29 @@
 
 ; Default consumer configuration for development/testing
 (def consumer-base-cfg
-  {"bootstrap.servers" (cfg/bootstrap-servers)
-   ;"client.id" (str (.getHostName (InetAddress/getLocalHost)) ":" (cfg/client-id) ":cons")
-   "client.id" (cfg/client-id)
-   "group.id" (cfg/group-id)
-   ;"socket.keepalive.enable" "true"
-   "auto.offset.reset" "earliest"
-   "enable.auto.commit" (cfg/auto-commit) ; Will ALWAYS be false for create-batch-consumer
-   ;"api.version.request" true
-   "key.deserializer" ByteArrayDeserializer
-   "value.deserializer" ByteArrayDeserializer})
-
-(when (cfg/run-dev-mode)
-  (log/debug "RUN_DEV_MODE =>" (cfg/run-dev-mode))
-  (log/debug "sink-db =>" (cfg/db-url))
-  (log/debug "Consumer base configuration =>" consumer-base-cfg))
+  (memoize
+   (fn []
+     {"bootstrap.servers" (cfg/bootstrap-servers)
+      ;"client.id" (str (.getHostName (InetAddress/getLocalHost)) ":" (cfg/client-id) ":cons")
+      "client.id" (cfg/client-id)
+      "group.id" (cfg/group-id)
+      ;"socket.keepalive.enable" "true"
+      "auto.offset.reset" "earliest"
+      "enable.auto.commit" (cfg/auto-commit) ; Will ALWAYS be false for create-batch-consumer
+      ;"api.version.request" true
+      "key.deserializer" ByteArrayDeserializer
+      "value.deserializer" ByteArrayDeserializer})))
 
 (defn consume-simple [^KafkaConsumer consumer process-record-fn]
-  (while true
-    (let [records (.poll consumer 500)] ; Return every half second regardless
+  (let [duration (java.time.Duration/ofMillis 500)]
+    (loop [records (.poll consumer duration)] ; Return every half second regardless
       (doseq [record records]
-        (process-record-fn record)))))
+        (process-record-fn record))
+      (recur (.poll consumer duration)))))
 
 (defn lazy-msg-stream [^KafkaConsumer consumer]
   (lazy-seq
-   (let [records (.poll consumer 1000)] ; Return once a second regardless
+   (let [records (.poll consumer (java.time.Duration/ofMillis 1000))] ; Return once a second regardless
      (concat records (lazy-msg-stream consumer)))))
 
 (defn update-offset-tuple
@@ -63,7 +65,7 @@
 (defn process-batch [buffer process-record-fn]
   ; Naive way. Do batch SQL insertions etc. instead. map returns lazy seq. Use
   ; doall to force consumption.
-  (doall (map #(process-record-fn %) buffer)))
+  (doall (map process-record-fn buffer)))
 
 ; Small batch for manual testing. Production batch would be 100|1000 etc.
 ; Consumer needs to be configured for a manual commit.
@@ -124,44 +126,44 @@
 
 (defmulti
   create-record-handler
-  (fn [msg-handler msg-type & options] msg-type))
+  (fn [_msg-handler msg-type & _options] msg-type))
 
 (defmethod create-record-handler :nippy
-  [msg-handler msg-type & options]
-  (let [client-id (consumer-base-cfg "client.id")
-        cons-group-id (consumer-base-cfg "group.id")]
+  [msg-handler _msg-type & _options]
+  (let [client-id ((consumer-base-cfg) "client.id")
+        cons-group-id ((consumer-base-cfg) "group.id")]
     (fn [^ConsumerRecord record]
       (let [m (hydrate-nippy-record record)]
         (msg-handler m client-id cons-group-id)))))
 
 (defmethod create-record-handler :msgpack
-  [msg-handler msg-type & options]
-  (let [client-id (consumer-base-cfg "client.id")
-        cons-group-id (consumer-base-cfg "group.id")]
+  [msg-handler _msg-type & _options]
+  (let [client-id ((consumer-base-cfg) "client.id")
+        cons-group-id ((consumer-base-cfg) "group.id")]
     (fn [^ConsumerRecord record]
       (let [m (hydrate-msgpack-record record)]
         (msg-handler m client-id cons-group-id)))))
 
 (defmethod create-record-handler :transit
-  [msg-handler msg-type & {:keys [transit-type]}]
-  (let [client-id (consumer-base-cfg "client.id")
-        cons-group-id (consumer-base-cfg "group.id")]
+  [msg-handler _msg-type & {:keys [transit-type]}]
+  (let [client-id ((consumer-base-cfg) "client.id")
+        cons-group-id ((consumer-base-cfg) "group.id")]
     (fn [^ConsumerRecord record]
       (let [m (hydrate-transit-record
                transit-type record)]
         (msg-handler m client-id cons-group-id)))))
 
 (defmethod create-record-handler :json
-  [msg-handler msg-type & options]
-  (let [client-id (consumer-base-cfg "client.id")
-        cons-group-id (consumer-base-cfg "group.id")]
+  [msg-handler _msg-type & _options]
+  (let [client-id ((consumer-base-cfg) "client.id")
+        cons-group-id ((consumer-base-cfg) "group.id")]
     (fn [^ConsumerRecord record]
       (let [m (hydrate-json-record record)]
         (msg-handler m client-id cons-group-id)))))
 
 (defn create-batch-consumer
   [& [options-map]]
-  (let [kafka-cons-cfg (merge consumer-base-cfg {"enable.auto.commit" false}
+  (let [kafka-cons-cfg (merge (consumer-base-cfg) {"enable.auto.commit" false}
                               options-map)]
     (log/info "Consumer client config: " kafka-cons-cfg)
     (KafkaConsumer. kafka-cons-cfg)))
@@ -206,18 +208,24 @@
   [^KafkaConsumer consumer topic-name]
   (.subscribe consumer [topic-name]))
 
+(mount/defstate kafka-consumer
+  :start (when (cfg/run-dev-mode)
+           (log/debug "RUN_DEV_MODE =>" (cfg/run-dev-mode))
+           (log/debug "sink-db =>" (cfg/db-url))
+           (log/debug "Consumer base configuration =>" (consumer-base-cfg))))
+
 (defn consume-messages
   "Consume messages with a KafkaConsumer consumer based on parameters passed."
   ([^KafkaConsumer consumer msg-handler msg-type & {:keys [batch-size transit-type]
-                                                   :or {batch-size 1}}]
+                                                    :or {batch-size 1}}]
    (let [process-record (create-record-handler msg-handler msg-type
-                                              (if-not (nil? transit-type) transit-type))]
+                                               (if-not (nil? transit-type) transit-type))]
      (log-consumer-state consumer)
      (consume-batch consumer process-record batch-size)))
 
-   ([^KafkaConsumer consumer batch-size xfn]
-    (log-consumer-state consumer)
-     (consume-batch consumer xfn batch-size)))
+  ([^KafkaConsumer consumer batch-size xfn]
+   (log-consumer-state consumer)
+   (consume-batch consumer xfn batch-size)))
 
 (comment
   (require '(clojure [pprint :as cp]) ; cp/pprint
@@ -227,15 +235,13 @@
   (consume-messages consumer (str (cfg/topic) "-test-nippy") 'log/info :nippy :batch-size 3)
   (consume-messages consumer (str (cfg/topic) "-test-msgpack") 'log/info :msgpack)
   (consume-messages consumer (str (cfg/topic) "-test-transit-json") 'log/info
-                                  :transit :batch-size 5 :transit-type :json)
+                    :transit :batch-size 5 :transit-type :json)
   (consume-messages consumer (str (cfg/topic) "-test-transit-json") 'log/info
-                                  :transit :transit-type :json)
+                    :transit :transit-type :json)
   (consume-messages consumer (str (cfg/topic) "-test-transit-jv") 'log/info
-                                  :transit :transit-type :json-verbose)
+                    :transit :transit-type :json-verbose)
   (consume-messages consumer (str (cfg/topic) "-test-transit-msgpack") 'log/info
-                                  :transit :transit-type :msgpack)
-  (log-consumer-status consumer)
+                    :transit :transit-type :msgpack)
 
   (def neppy-consumer (create-batch-consumer "group.id" "neppy-group-id"))
-  (consume-messages neppy-consumer (str (cfg/topic) "-test-json") 'log/info :json)
-  (log-consumer-status neppy-consumer))
+  (consume-messages neppy-consumer (str (cfg/topic) "-test-json") 'log/info :json))

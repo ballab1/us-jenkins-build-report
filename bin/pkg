@@ -15,103 +15,30 @@
 # A side benefit is that we can compile and package without the need to
 # install gradle or maven.
 
-# Ensure we are executing in the project directory.
-cd "$(dirname $0)/.."
+if [ "$#" != 1 ]; then
+   echo ""
+   echo "Usage: $(dirname $0)/pkg Main-Namespace ('none' is valid)"
+   echo ""
+else
+   # Ensure we are executing in the project directory.
+   cd $(dirname $0)/..
 
-source etc/utils.shlib
-set_revision
+   proj_dir=$PWD
+   source etc/utils.shlib
+   set_revision
 
-# Prepare env
-target_dir=.classes
-rm -rf "$target_dir"
-[ -d "$target_dir" ] || mkdir "$target_dir"
+   # Prepare env
+   cd $proj_dir
+   target_dir=$proj_dir/target
+   classes_dir=$target_dir/.classes
+   deps_dir=$target_dir/.deps
 
-if [ -z "$PKG_DIR" ]; then
-  PKG_DIR=deploy
+   if [ -z ${JAR_DIR} ]; then
+     JAR_DIR=$target_dir/lib
+   fi
+
+   if [ -z ${MAIN_NS} ]; then
+     MAIN_NS=$1
+   fi
+   compile_and_package
 fi
-
-if [ -z "${MAIN_NS:-}" ]; then
-  MAIN_NS=$1
-fi
-
-function extract_dependencies() {
-   # Find all jar files on the classpath and decompress them along side the
-   # project's compiled classes. WARNING the last class decompressed overwrites
-   # a previous version upon collision. Reverse process the list to match what a
-   # classloader would see.
-   manifest_cp=()
-   files=( ${1//:/ } )
-   cd "$target_dir"
-   for (( i=${#files[@]}-1; i>=0 ;i-- )); do
-      file="${files[i]}"
-      if [ -f "$file" ]; then
-         echo "Extracting: $file into $target_dir"
-         manifest_cp+=" ${file##*/} \n"
-         jar xf "$file"
-      fi
-   done
-   sorted_manifest_cp="$(printf "$manifest_cp" | sort)"
-   cd ..
-}
-
-function create_manifest() {
-   # Create a manifest file
-   manifest=.manifest
-   echo "Title: $(cat .app-name)" > $manifest
-   echo "SCM-Revision: $(cat .revision)" >> $manifest
-   echo "SCM-Location: $(grep -m1 url .git/config | cut -d \  -f 3)" >> $manifest
-   echo "Built-By: $USER" >> $manifest
-   echo "Build-Timestamp: $(date)" >> $manifest
-   echo "Build-Host: $(uname -vn)" >> $manifest
-   echo "Built-With: $0" >> $manifest
-   echo "Main-Class: ${MAIN_NS//-/_}" >> $manifest
-   echo "Class-Path: $sorted_manifest_cp" >> $manifest
-}
-
-function package() {
-   # Remove any file in $target_dir coming from the decompressed jars that is also
-   # in src/resources as the latter will need to override these in the uber jar.
-   for file in $(ls src/resources); do
-      find "$target_dir" -type f -name "$file" -delete
-   done
-
-   # Create the project's uberjar including project class files, resources and jar class files.
-   [ -d "$PKG_DIR" ] || mkdir "$PKG_DIR"
-   jar_name="$PKG_DIR/$(cat .app-name)-$(cat .revision).jar"
-   echo "Creating $jar_name"
-   jar cmf $manifest "$jar_name" -C src/resources . -C "$target_dir" .
-}
-
-function find_project_namespaces() {
-   # Get the project's namespaces
-   local namespaces=()
-   for file in $(find src/main/clj -name \*.clj); do
-      drop_front=${file##src/main/clj/}
-      drop_extension=${drop_front%%.clj}
-      from_underscore_to_dash=${drop_extension//_/-}
-      namespaces+="${from_underscore_to_dash//\//.} "
-   done
-   echo $namespaces
-}
-
-function compile() {
-   # Compile the project's namespaces like msa.core. WARNING compiled project
-   # classes will overwrite decompressed jars classes upon collision.
-   echo "namespaces=$(find_project_namespaces)"
-   java -cp "${target_dir}:$1" -Dclojure.compile.path=$target_dir clojure.lang.Compile $(find_project_namespaces)
-}
-
-function compile_and_package() {
-   printf "MAIN_NS=$MAIN_NS\nPKG_DIR=$PKG_DIR\n"
-   # Get the project's classpath
-   local cpath=$(clj -Spath)
-
-   extract_dependencies "$cpath"
-   compile "$cpath"
-
-   create_manifest
-   package
-}
-
-#compile $(clj -Spath)
-compile_and_package

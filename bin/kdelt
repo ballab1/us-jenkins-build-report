@@ -2,23 +2,34 @@
 
 source $(dirname $0)/validate-kafka-env
 
+usage() {
+   echo "Usage:"
+   echo "   $(dirname $0)/kdelt topic-name [--force]"
+   echo ""
+}
+
 if [ "$kafka_home" ]; then
    cd ${kafka_home}
-   if [ $# -eq 1 ]; then
+   if [ $# -eq 1 ] || [ $# -eq 2 ]; then
       topic=$1
    else
-      topic=test
+      usage
+      exit -1
    fi
-   ./bin/kafka-topics.sh --describe --topic ${topic} --zookeeper ${ZK_HOSTS}
    topic_parition_offset=$(./bin/kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list ${BOOTSTRAP_SERVERS} --topic ${topic})
    if [ ! -z "$topic_parition_offset" ]; then
       IFS=':'
       array=( $topic_parition_offset )
-      #echo "topic = ${array[0]}"
       echo ""
       echo "partition = ${array[1]}"
       echo "current offset = ${array[2]}"
+      if [ "${array[2]}" -eq "0" ] || [ "$2" = "--force" ]; then
+         ./bin/kafka-topics.sh --zookeeper ${ZK_HOSTS} --delete --topic ${topic}
+      else
+         echo "$topic has an offset of ${array[2]} and was NOT deleted!"
+      fi
    fi
+
 fi
 
 # vim: ft=sh

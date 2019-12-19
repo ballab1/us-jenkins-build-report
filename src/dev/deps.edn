@@ -9,8 +9,7 @@
 ;; For all attributes other than :paths, these config files are merged left to right.
 ;; Only the last :paths is kept and others are dropped.
 
-{
-  ;; Paths
+{;; Paths
   ;;   Directories in the current project to include in the classpath
 
   ;; :paths ["src"]
@@ -22,75 +21,239 @@
   ;; }
 
   ;; Aliases
-	;;   resolve-deps aliases (-R) affect dependency resolution, options:
-	;;     :extra-deps - specifies extra deps to add to :deps
-	;;     :override-deps - specifies a coordinate to use instead of that in :deps
-	;;     :default-deps - specifies a coordinate to use for a lib if one isn't found
-	;;   make-classpath aliases (-C) affect the classpath generation, options:
-	;;     :extra-paths - vector of additional paths to add to the classpath
-	;;     :classpath-overrides - map of lib to path that overrides the result of resolving deps
+  ;;   resolve-deps aliases (-R) affect dependency resolution, options:
+  ;;     :extra-deps - specifies extra deps to add to :deps
+  ;;     :override-deps - specifies a coordinate to use instead of that in :deps
+  ;;     :default-deps - specifies a coordinate to use for a lib if one isn't found
+  ;;   make-classpath aliases (-C) affect the classpath generation, options:
+  ;;     :extra-paths - vector of additional paths to add to the classpath
+  ;;     :classpath-overrides - map of lib to path that overrides the result of resolving deps
 
   ;; :aliases {
   ;;   :deps {:extra-deps {org.clojure/tools.deps.alpha {:mvn/version "0.2.196"}}}
-  ;;   :test {:extra-paths ["test"]}
+  ;;   :test {:extra-paths {"src/test/clj"}}
   ;; }
-  :aliases {
-    :1.8 {:override-deps {org.clojure/clojure {:mvn/version "1.8.0"}}}
-    :1.9 {:override-deps {org.clojure/clojure {:mvn/version "1.9.0"}}}
-    :1.10 {:override-deps {org.clojure/clojure {:mvn/version "1.10.0-alpha6"}}}
-    ; https://github.com/seancorfield/clj-new/
-    ; clj -A:new app myname/myapp; cd myapp; clj -m myname.myapp
-    :new {:extra-deps {seancorfield/clj-new
-                   {:git/url "https://github.com/seancorfield/clj-new"
-                    :sha "108f27159501f8ce12564b398b0ea50def3892b1"}}
-           :main-opts ["-m" "clj-new.create"]}
-    ; Interactive vim development. NOTE: requires java 1.8 for 'gf' to
-    ; work in vim-fireplace.  Use: -R:dev -i init-cider
-    :dev {:extra-deps {nrepl/nrepl {:mvn/version "0.4.5"}
-                       ;org.clojure/tools.nrepl {:mvn/version "0.2.13"}
-                       com.bhauman/rebel-readline {:mvn/version "0.1.4"}
-                       cider/cider-nrepl {:mvn/version "0.18.0"}
-                       refactor-nrepl {:mvn/version "2.4.0"}
-                       mvxcvi/puget {:mvn/version "1.0.2"}
-                       mvxcvi/whidbey {:mvn/version "1.3.2"}
-                       org.clojure/tools.trace {:mvn/version "0.7.10"}
-                       com.billpiel/sayid {:mvn/version "0.0.17"}
-                       slamhound {:mvn/version "1.5.5"}
-                       cljfmt {:mvn/version "0.6.1"}
-                       jonase/eastwood {:mvn/version "0.3.1" :exclusions [org.clojure/clojure]}
-                       ; Also install vim-kibit (NOT kibit-vim as it invokes lein)
-                       jonase/kibit {:mvn/version "0.1.6" :exclusions [org.clojure/clojure]}}
-          ; Use -C:dev to add :extra-paths to the classpath to include
-          ; user.clj etc.
-          :extra-paths ["src/dev/clj"]}
-    ; Interactive Clojurescript development. Builds on -R:dev
-    ; NOTE: ClojureScript still requires clojure 1.8.
-    ; Use: -R:dev:dev-cljs -i init-figwheel
-    :dev-cljs {:extra-deps {figwheel-sidecar {:mvn/version "0.5.16"}
-                            cider/piggieback {:mvn/version "0.3.9"}
-                            ring/ring-defaults {:mvn/version "0.3.2"}}
-               ; figwheel http-server-root assumes "resources" is a classpath
-               ; root. Use -C:dev-cljs to add "resources" to cp.
-               :extra-paths ["src/resources"]}
-    ; Augment an existing project with nRepl vim interaction
-    ; Requires -R:dev:standalone & -C:dev:standalone
-    :standalone {:extra-deps {environ {:mvn/version "1.1.0"}}
-                 :extra-paths ["~/envcfg/user/.clojure/proj/dev/clj"]}
-    ; Benchmarking
-    :bench {:extra-deps {criterium {:mvn/version "0.4.4"}
-                         com.taoensso/tufte {:mvn/version "2.0.1"}}}
-    ; clojure -A:rebel-clj
-    :rebel-clj {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
-                :main-opts ["-m" "rebel-readline.main"]}
-    ; clojure -A:rebel-cljs
-    :rebel-cljs {:extra-deps {com.bhauman/rebel-readline-cljs {:mvn/version "0.1.4"}}
-                 :main-opts ["-m" "rebel-readline.main"]}
-  }
 
-  ;; Provider attributes
+  ;;
+  ;; https://github.com/clojure/tools.deps.alpha/wiki/Tools
+  ;;
+  ;; Aliases commonly used while developing 'standard' msa.core uServices.
+ :aliases
+ {:deps {:extra-deps {org.clojure/tools.deps.alpha {:mvn/version "0.7.516"}}}
+  :test {:extra-paths ["src/test/clj"]}
 
-  ;; :mvn/repos {
-  ;;   "central" {:url "https://repo1.maven.org/maven2/"}
-  ;;   "clojars" {:url "https://clojars.org/repo"}
-  ;; }
-}
+  :1.8 ^:depot/ignore {:override-deps {org.clojure/clojure {:mvn/version "1.8.0"}}}
+  :1.9 ^:depot/ignore {:override-deps {org.clojure/clojure {:mvn/version "1.9.0"}}}
+  :1.10 {:override-deps {org.clojure/clojure {:mvn/version "1.10.1"}}}
+
+  ; https://github.com/seancorfield/clj-new/
+  ; clj -A:new app myname/myapp; cd myapp; clj -m myname.myapp
+  ; For example: clj -A:new lambdacd uS-base.lambdacd
+  :new {:extra-deps {seancorfield/clj-new
+                     #_{:git/url "https://github.com/seancorfield/clj-new"
+                        :sha "7797e799c37a70ec9b484114fffd311a6f4ed2a5"}
+                     {:mvn/version "0.7.6"}}
+        :main-opts ["-m" "clj-new.create"]}
+
+  ; Interactive vim development. NOTE: requires java 1.8 for 'gf' to
+  ; work in vim-fireplace.  Use: -R:dev -i init-cider
+  :dev {:extra-deps {nrepl/nrepl {:mvn/version "0.6.0"}
+                     ;org.clojure/tools.nrepl {:mvn/version "0.2.13"}
+                     cider/cider-nrepl {:mvn/version "0.21.1"}
+                     refactor-nrepl {:mvn/version "2.4.0"}
+                     mvxcvi/puget {:mvn/version "1.1.2"}
+                     mvxcvi/whidbey {:mvn/version "2.1.1"}
+                     org.clojure/tools.trace {:mvn/version "0.7.10"}
+                     com.billpiel/sayid {:mvn/version "0.0.17"}
+                     slamhound {:mvn/version "1.5.5"}
+                     cljfmt {:mvn/version "0.6.4"}
+                     jonase/eastwood {:mvn/version "0.3.6" :exclusions [org.clojure/clojure]}
+                     ; Also install vim-kibit (NOT kibit-vim as it invokes lein)
+                     jonase/kibit {:mvn/version "0.1.6" :exclusions [org.clojure/clojure]}}
+        ; Use -C:dev to add :extra-paths to the classpath to include
+        ; user.clj etc.
+        :extra-paths ["dev/src/clj"]}
+
+  ; Interactive Clojurescript development. Builds on -R:dev
+  ; NOTE: ClojureScript still requires clojure 1.8.
+  ; Use: -R:dev:dev-cljs -i init-figwheel
+  :dev-cljs {:extra-deps {figwheel-sidecar {:mvn/version "0.5.19"}
+                          cider/piggieback {:mvn/version "0.4.1"}
+                          ring/ring-defaults {:mvn/version "0.3.2"}}
+             ; figwheel http-server-root assumes "resources" is a classpath
+             ; root. Use -C:dev-cljs to add "resources" to cp.
+             :extra-paths ["src/resources"]}
+
+  ; REPL-related tools:
+  ; - start a modern nREPL server on a random available port:
+  :nrepl {:extra-deps {nrepl {:mvn/version "0.6.0"}}
+          :main-opts ["-m" "nrepl.cmdline"]}
+  ; - start a legacy nREPL server on port 60606:
+  :nrepl/old {:extra-deps {org.clojure/tools.nrepl {:mvn/version "0.2.13"}}
+              :main-opts ["-e" "(require,'[clojure.tools.nrepl.server,:refer,[start-server]]),(start-server,:port,60606)"]}
+  ; - start a Socket REPL on port 50505:
+  :socket {:jvm-opts ["-Dclojure.server.repl={:port,50505,:accept,clojure.core.server/repl}"]}
+  ; - start a Socket pREPL on port 40404:
+  :prepl {:jvm-opts ["-Dclojure.server.repl={:port,40404,:accept,clojure.core.server/io-prepl}"]}
+  ; - see https://atom.io/packages/proto-repl
+  ; - for use with Atom/ProtoREPL: clj -A:proto:nrepl
+  :proto {:extra-deps {proto-repl {:mvn/version "0.3.1"}}}
+  ; - see https://github.com/bhauman/rebel-readline
+  ; - clojure -A:rebel
+  :rebel-clj {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.4"}}
+              :main-opts ["-m" "rebel-readline.main"]}
+
+  ; clojure -A:rebel-cljs
+  :rebel-cljs {:extra-deps {com.bhauman/rebel-readline-cljs {:mvn/version "0.1.4"}}
+               :main-opts ["-m" "rebel-readline.main"]}
+
+  ; - see https://github.com/bbatsov/compliment
+  :comp {:extra-deps {compliment {:mvn/version "0.3.9"}}}
+
+  ; Augment an existing project with nRepl vim interaction
+  ; Requires -R:dev:standalone & -C:dev:standalone
+  :standalone {:extra-deps {environ {:mvn/version "1.1.0"}}
+               :extra-paths ["~/envcfg/user/.clojure/proj/dev/clj"]}
+
+  ; clj -R:rebl8 -m cognitect.rebl or simply clj -A:rebl8
+  :rebl8 {:extra-deps  {^:depot/ignore org.clojure/clojure {:mvn/version "1.8.0"}
+                        org.clojure/core.async {:mvn/version "0.4.500"}
+                        com.cognitect/rebl {:local/root "/Users/hendrr2/tools/REBL-0.9.172/REBL-0.9.172.jar"}
+                        ; deps for file datafication (0.9.149 or later)
+                        org.clojure/data.csv {:mvn/version "0.1.4"}
+                        org.clojure/data.json {:mvn/version "0.2.6"}
+                        org.yaml/snakeyaml {:mvn/version "1.24"}} :main-opts  ["-m" "cognitect.rebl"]}
+
+  ; clj -R:rebl -m cognitect.rebl or simply clj -A:rebl
+  :rebl {:extra-deps {org.clojure/clojure {:mvn/version "1.10.1"}
+                      org.clojure/core.async {:mvn/version "0.4.500"}
+                      com.cognitect/rebl {:local/root "/Users/hendrr2/tools/REBL-0.9.172/REBL-0.9.172.jar"}
+                      ; deps for file datafication (0.9.149 or later)
+                      org.clojure/data.csv {:mvn/version "0.1.4"}
+                      org.clojure/data.json {:mvn/version "0.2.6"}
+                      org.yaml/snakeyaml {:mvn/version "1.24"}
+                      ; When using java 11
+                      ^:depot/ignore org.openjfx/javafx-fxml     {:mvn/version "11.0.2"}
+                      ^:depot/ignore org.openjfx/javafx-controls {:mvn/version "11.0.2"}
+                      ^:depot/ignore org.openjfx/javafx-swing    {:mvn/version "11.0.2"}
+                      ^:depot/ignore org.openjfx/javafx-base     {:mvn/version "11.0.2"}
+                      ^:depot/ignore org.openjfx/javafx-web      {:mvn/version "11.0.2"}}
+         :main-opts ["-m" "cognitect.rebl"]}
+
+  ; Vulnerabilities scanner
+  #_#_:nvd {:extra-deps {nvd-clojure {:mvn/version "1.1.1"}}
+            :main-opts ["-m" "nvd.task.check"]}
+
+  ; Benchmarking
+  ; - see https://github.com/hugoduncan/criterium/
+  ; - (require '[criterium.core :refer [bench]])
+  ; - (bench (some-expression))
+  :bench {:extra-deps {criterium {:mvn/version "0.4.5"}
+                       com.taoensso/tufte {:mvn/version "2.1.0-RC4"}}}
+
+  ; https://github.com/hagmonk/find-deps
+  :find-deps {:extra-deps {find-deps
+                           {:git/url "https://github.com/hagmonk/find-deps",
+                            :sha "9bf23a52cb0a8190c9c2c7ad1d796da802f8ce7a"}},
+              :main-opts ["-m" "find-deps.core"]}
+
+  :outdated {:extra-deps {olical/depot {:mvn/version "1.8.4"}}
+             :main-opts ["-m" "depot.outdated.main"]}
+
+  ; Explicitly call "static code analysis" tools from cli instead from vim
+  :eastwood {:main-opts ["-m" "eastwood.lint" "{:source-paths,[\"src/main/clj\"]}"]
+             :extra-deps {jonase/eastwood {:mvn/version "0.3.6"}}}
+
+  :kibit {:extra-deps {jonase/kibit {:mvn/version "0.1.6"}}
+          :main-opts ["-e" "(require,'[kibit.driver,:as,k]),(k/external-run,[\"src\"],nil)"]}
+
+  ; Formatting
+  :fmt {:extra-deps {com.jameslaverack/cljfmt-runner
+                     {:git/url "https://github.com/JamesLaverack/cljfmt-runner"
+                      :sha "d6952345b3047e03ca3a88f89a1433c109b7b442"}}
+        :main-opts ["-m" "cljfmt-runner.check"]}
+
+  ; To fix formatting run: clj -Afmt:fmt/fix
+  :fmt/fix {:main-opts ["-m" "cljfmt-runner.fix"]}
+
+  ; capsule and 1jar packaging
+  :pack {:extra-deps {pack/pack.alpha
+                      {:git/url "https://github.com/juxt/pack.alpha.git"
+                       ;:sha "81b9e47d992b17aa3e3af1a47aed1f0287ebe9b8" ; newer version fails
+                       :sha "ce74d1e03e76e9da1ef573da3165089376a4713c"}}
+         :main-opts ["-m"]}
+
+  ; depstar jar packaging. No AOT.
+  :depstar {:extra-deps {com.healthfinch/depstar
+                         {:git/url "https://github.com/healthfinch/depstar.git"
+                          :sha "2879672df7fd296855563c22dd9ba9de2022a0b4"}}}
+
+  ; Run: java -cp target/<project>.jar clojure.main -m <namespace with main>
+  :uberdeps {:extra-deps {uberdeps {:mvn/version "0.1.4"}}
+             :main-opts ["-m" "uberdeps.uberjar"]}
+
+  ; https://github.com/luchiniatwork/cambada, jar, uberjar, graalvm packaging
+  :jar ^:depot/ignore {:extra-deps {com.dell.spe.mres/cambada {:mvn/version "1.0.0-6-gcad0c4b"}}
+                       :main-opts ["-m" "cambada.jar" "-a" "msa.core" "-m" "msa.core"
+                                   "-r" "src/resources"]}
+  ; Build: clj -A:uberjar --app-version $(git describe --tag --dirty) [--out deploy]
+  ; Run: java -jar target|deploy/uS-base-0.0-20-g50863b1-dirty-standalone.jar | bunyan
+  :uberjar ^:depot/ignore {:extra-deps
+                           {com.dell.spe.mres/cambada {:mvn/version "1.0.0-6-gcad0c4b"}}
+                           :main-opts ["-m" "cambada.uberjar" "-a" "msa.core" "-m" "msa.core"
+                                       "-r" "src/resources" "--app-classifier" "cambada"]}
+  :native ^:depot/ignore {:extra-deps {cambada {:mvn/version "1.0.4"}}
+                          :main-opts ["-m" "cambada.native-image" "-m" "msa.core"]}
+
+  #_#_:native-image {:main-opts ["-m clj.native-image core"
+                                 "--initialize-at-build-time"
+                                 ; optional native image name override
+                                 "-H:Name=core"]
+                     :jvm-opts ["-Dclojure.compiler.direct-linking=true"]
+                     :extra-deps {clj.native-image
+                                  {:git/url "https://github.com/taylorwood/clj.native-image.git"
+                                   :sha "7708e7fd4572459c81f6a6b8e44c96f41cdd92d4"}}}
+
+  ; Custom build using clojure: https://cjohansen.no/clojure-in-production-tools-deps
+  ; Build: clojure -A:cbuild [-m package]
+  ; Run: java $JAVA_OPTS -cp 'target/classes:target/lib:target/lib/lib/*' msa.core
+  :cbuild {:extra-paths ["dev/src/build"] ; Be sure to: git pull --recurse-submodules
+           :extra-deps {badigeon/badigeon {:git/url "https://github.com/EwenG/badigeon.git"
+                                           :sha "0f39b5b415a17808f1d76123e4a54f89b94221bf"
+                                           ;:sha "e7f62a60d8e890fc84a47bcfdd59137e11ff1c95"
+                                           #_#_:tag "0.0.7"}
+                        org.clojure/tools.namespace {:mvn/version "0.3.0"}}
+           :main-opts ["-m" "package" "-m" "msa.core"]}
+
+  ; Workflow/build tool
+  #_#_:meyvn {:extra-deps {org.danielsz/meyvn {:mvn/version "1.0.7"}}
+              :main-opts ["-m" "meyvn.core"]}
+
+  ; Workflow tool
+  :vulcan {:extra-deps {omnyway-labs/vulcan
+                        {:git/url "https://github.com/omnyway-labs/vulcan.git",
+                         :sha "577daf362c3f81e08d43f654ef0bbf3ddc93e015"
+                         :tag "master"}}
+           :main-opts ["-m" "vulcan.main"]
+           :jvm-opts ["-client"
+                      "-XX:+UseSerialGC"
+                      "-XX:CICompilerCount=1"
+                      "-XX:+TieredCompilation"
+                      "-Xshare:off"
+                      "-Xverify:none"
+                      "-XX:TieredStopAtLevel=1"]}
+
+  ; Test coverage
+  :cloverage {:extra-deps {cloverage {:mvn/version "1.1.1"}}
+              :main-opts ["-m" "cloverage.coverage" "-p" "src/main/clj" "-t" "src/test/clj"]}
+
+  ; start the Liquid Clojure editor
+  ; - see https://github.com/mogenslund/liquid
+  :liquid {:extra-deps {mogenslund/liquid {:mvn/version "1.1.3"}}
+           :main-opts ["-m" "dk.salza.liq.core"]}}
+
+ ;; Provider attributes
+ :mvn/repos
+ {;"central" {:url "https://repo1.maven.org/maven2/"}
+  ;"clojars" {:url "https://clojars.org/repo"}
+  "sonatype-oss-public" {:url "https://oss.sonatype.org/content/groups/public/"}}}

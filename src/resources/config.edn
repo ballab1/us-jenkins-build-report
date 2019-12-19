@@ -1,3 +1,0 @@
-; env vars override anything in $CONFIG_EDN or ~/.config.edn either of which overrides anything in here.
-; chmod go-rwx ~/.config.edn.
-{}

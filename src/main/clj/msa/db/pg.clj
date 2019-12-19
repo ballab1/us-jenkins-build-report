@@ -1,8 +1,13 @@
 (ns msa.db.pg
   "Core PostgreSQL database interaction"
-  (:require [clojure.java.jdbc :as jdbc]
-            [config.env :as cfg]
-            [mount.core :refer [defstate]]
+  {:clj-kondo/config
+   '{;:lint-as {msa.db.pg/defstate clojure.core/def}
+     :linters {:unresolved-symbol {:level :off :exclude [(msa.db.pg [sink-db])]}}}}
+
+  (:require [config.env :as cfg]
+            [hugsql.core :as hugsql]
+            [hugsql.adapter.next-jdbc :as next-adapter]
+            [mount.core :as mount]
             [timbre.appenders.bunyan :as log])
   (:import (com.zaxxer.hikari HikariDataSource))
   (:gen-class))
@@ -18,20 +23,18 @@
               (.setConnectionTimeout 86400000)
               ; 1 minute
               (.setIdleTimeout 60000))]
-    (log/debug (format "jdbcUrl is %s" (cfg/db-url)))
-    {:datasource pds}))
+    pds))
 
 (defn ds-close
   "Close a Hikari datasource"
   [ds]
-  (.close ^HikariDataSource (:datasource ds)))
+  (.close ^HikariDataSource ds))
 
 ; Aggregation sink DB. Target set through environment.
-(defstate sink-db
-  :start (pooled-datasource)
+(mount/defstate sink-db
+  :start (do
+           (when (cfg/run-dev-mode)
+             (log/debug (format "jdbcUrl is %s" (cfg/db-url))))
+           (hugsql/set-adapter! (next-adapter/hugsql-adapter-next-jdbc {:builder-fn next.jdbc.result-set/as-maps}))
+           (pooled-datasource))
   :stop (ds-close sink-db))
-
-(defn simple-query
-  "Pass the query as a SQL statement"
-  [query]
-  (into [] (jdbc/query sink-db [query])))

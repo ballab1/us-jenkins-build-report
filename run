@@ -1,272 +1,308 @@
 #!/usr/bin/env bash
 
-#------------------------------------------------------------------------------------------
-function clojure() {
-   cmd=${1:-}
-   [ $# -gt 0 ] && shift
-
-   repl="-J-Dclojure.server.repl={:port ${REPL_PORT} :accept clojure.core.server/repl}"
-   nrepl="-J-Dnrepl.port=$NREPL_PORT"
+#-----------------------------------------------------------------------
+function run_clj() {
+   repl=-J-Dclojure.server.repl="{:port ${REPL_PORT} :accept clojure.core.server/repl}"
+   nrepl="-J-Dnrepl.port=${NREPL_PORT}"
    aliases=:dev:test
-   case "$cmd" in
+
+   case "$1" in
       jar)
-         if [ -f "$FQ_APP" ]; then
-            $JAVA -jar "$FQ_APP"
+         if [ -f ${FQ_APP} ]; then
+            java -jar ${FQ_APP}
          else
-            process pkg "$MAIN_NS"
-            process dev jar
+            run_cmd pkg $MAIN_NS
+            run_cmd dev jar
          fi
          ;;
 
       itest)
          # In a shell 'run dev jar' & in another shell 'run itest' to interactively test drive the jar with vim.
-         $CLJ $JDK_OPTS "$repl" "$nrepl" -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m "$MAIN_NS-test"
+         clj $jdk_ops "$repl" $nrepl -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m $MAIN_NS-test
          ;;
 
       repl)
          # will include $CP/user.clj automatically
-         $CLJ $JDK_OPTS "$repl" "$nrepl" -A$aliases -i src/dev/clj/init-cider.clj -r
+         clj $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -r
          ;;
 
       nrepl)
          # will include $CP/user.clj automatically. https://nrepl.readthedocs.io/en/latest/usage
-         $CLJ $JDK_OPTS "$repl" "$nrepl" -A$aliases -i src/dev/clj/init-cider.clj -m nrepl.cmdline --interactive --color
+         clj $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -m nrepl.cmdline --interactive --color
          ;;
 
       rebl)
          # use clojure since clj uses rlwrap. rebel-readline does not include $CP/user.clj.
          # Use -i explicitly but be sure to use (ns user) in -i script. Cannot use clojure "slim" classifier.
-         clojure $JDK_OPTS "$repl" "$nrepl" -A$aliases -i src/dev/clj/init-cider.clj -i src/dev/clj/user.clj -m rebel-readline.main
+         clojure $jdk_ops "$repl" $nrepl -A$aliases -i src/dev/clj/init-cider.clj -i src/dev/clj/user.clj -m rebel-readline.main
          ;;
 
       depstar)
-         $CLJ -Scp "$FQ_DS_APP" -m "$MAIN_NS"
+         clj -Scp ${FQ_DS_APP} -m $MAIN_NS
          ;;
 
       capsule)
-         $JAVA -jar "$FQ_CAPS_APP"
+         java -jar ${FQ_CAPS_APP}
          ;;
 
       1jar)
-         $JAVA -jar "$FQ_1JAR_APP" -m "$MAIN_NS"
+         java -jar ${FQ_1JAR_APP} -m $MAIN_NS
          ;;
 
       *)
-         # will include $CP/user.clj automatically
-         $CLJ $JDK_OPTS "$repl" "$nrepl" -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m "$MAIN_NS"
+        # will include $CP/user.clj automatically
+        clojure $jdk_ops "$repl" $nrepl -R$aliases -C$aliases -i src/dev/clj/init-cider.clj -m $MAIN_NS
          ;;
+
    esac
 }
 
-#------------------------------------------------------------------------------------------
-function docker_cmd() {
-   cmd=${1:-}
-   [ $# -gt 0 ] && shift
-
-   case "$cmd" in
-      run)
-         # Optionally publish uS ports with -p port:port/tcp
-         DOCKER_PARMS="--env-file ${DOCKER_ENV_FILE} --name ${APP} ${lc_app}:${REVISION}"
-         is_docker_env_file_set
-         docker stop "$APP"
-         docker rm "$APP"
-         if [ "${1:-}" = 'debug' ]; then
-            $DOCKER run -t -i --entrypoint /bin/sh "$DOCKER_PARMS"
-         else
-            $DOCKER run -d "$DOCKER_PARMS"
-         fi
-         docker_cmd ls
-         # after 'run docker run' completes, run 'docker attach some-id'. Use ^p^q to exit the container.
-         ;;
-
-      ls)
-         echo 'Containers...'
-         docker ps -a --filter name="$APP"
-         echo
-         echo 'Images...'
-         $DOCKER images | grep "$APP"
-         ;;
-
-      clean)
-         $DOCKER rm $(docker ps -aq --filter name="$APP")
-         $DOCKER rmi $(docker images | grep "$APP" | awk '{print $1}')
-         docker_cmd ls
-         ;;
-
-      scrub)
-         docker_cmd clean
-         $DOCKER rmi $(docker images | grep '<none>' | awk '{print $1}')
-         $DOCKER images
-         ;;
-
-      build)
-         process clean
-         if [ "${1:-}" ]; then
-            # Build a jar with capsule, 1jar, depstar, mvn or gradle
-            process pkg "$1"
-         else
-            # Build a jar without tooling
-            process pkg "$MAIN_NS"
-         fi
-         # run pkg above may change $REVISION, be sure to pick that up.
-         get_revision
-         $DOCKER build -t "${lc_app}:$REVISION" .
-         ;;
-
-      *)
-         process usage
-         ;;
-   esac
-}
-
-#------------------------------------------------------------------------------------------
-function packer() {
-   build_tool=${1:-}
-   [ $# -gt 0 ] && shift
+#-----------------------------------------------------------------------
+function run_cmd() {
+   cmd=$1
    shift
-
-   case "$build_tool" in
-      mvn)
-         # 'auto merge' mvn plugins into the generated pom.xml. Only add clojure-maven-plugin xml when not present in pom.xml
-         grep -q '^[ \t]*<artifactId>clojure-maven-plugin</artifactId>' pom.xml || sed -i -e '/<sourceDirectory>src\/main\/clj<\/sourceDirectory>/r src/dev/mvn-plug-res.xml' pom.xml
-         [ -f pom.xml ] && rm pom.xml-e
-         $MVN package
-         ;;
-
-      depstar)
-         # No qualifer in the name. Meant as clj source based library jar.
-         $CLJ -A:depstar -m hf.depstar.uberjar "$FQ_APP"
-         ;;
-
-      depstar-uber)
-         FQ_APP="$FQ_DS_APP"
-         $CLJ -A:depstar -m hf.depstar.uberjar "$FQ_APP"
-         ;;
-
-      capsule)
-         FQ_APP="$FQ_CAPS_APP"
-         $CLJ -A:pack mach.pack.alpha.capsule -m "$MAIN_NS" --application-id "$APP" --application-version "$REVISION" \
-             -M "Built-By: $USER" -M "Build-Timestamp: $(date)" -M "Build-Host: $(uname -vn)" \
-             "$FQ_APP"
-         ;;
-
-      1jar)
-         FQ_APP="$FQ_1JAR_APP"
-         $CLJ -A:pack mach.pack.alpha.one-jar "$FQ_APP"
-         ;;
-
-      gradle)
-         # run gradle with the JDK selected by this script.
-         $GRADLE "-Dorg.gradle.java.home=$JAVA_HOME" shadowJar
-         ;;
-
-      *)
-         bin/pkg "$MAIN_NS"
-         ;;
-
-   esac
-}
-
-#------------------------------------------------------------------------------------------
-function process() {
-   stage=${1:-usage}
-   [ $# -gt 0 ] && shift
-
-   case "${stage}" in
+   case "$cmd" in
       dev)
-         jenv graal
-         $JAVA -version
+         jenv 1.8; java -version
          set_repl_ports
          # Debug interactively against a production configuration. Check config.edn.
          #export CONFIG_PROFILE=':prod'; export TIMBRE_LEVEL=':debug'
          export RUN_DEV_MODE=true
-         clojure "$@"
+         export CONFIG_PROFILE=':dev'
+         run_clj $1
          ;;
 
       prod)
          export CONFIG_PROFILE=':prod'
          # Debug interactively against a production environment.
          #export RUN_DEV_MODE=true; export TIMBRE_LEVEL=':debug'
-         clojure "$@"
+         run_clj $1
+         ;;
+
+      compile)
+         bin/compile
          ;;
 
       pkg)
-         jenv graal; $JAVA -version
-         # Remove dependencies on development jars
-         touch deps.edn
-         clojure -Sverbose -Spom pkg "$@"
+         #jenv ojdk; java -version
+         jenv 11; java -version
          # Compile out any logging below this "TIMBRE_LEVEL"
          export TIMBRE_LEVEL=':info'
-         [ -d "$PKG_DIR" ] || mkdir "$PKG_DIR"
-         packer "$@"
+         # Static analysis
+         clj -A:eastwood
+         clj -A:kibit
+         [ -d $JAR_DIR ] || mkdir $JAR_DIR
+         run_cmd "$@"      
          gen_proj_pom
-         tar -cf $(sed s/.jar$/.tar/g <<<"$FQ_APP") bin run "$FQ_APP_NS.pom" "$FQ_APP"
+         tar -cf $(sed s/.jar$/.tar/g <<<${FQ_APP}) bin run ${FQ_APP_NS}.pom ${FQ_APP}
          ;;
 
       docker)
          # Repository name must be lowercase.
          lc_app=$(echo ${APP} | tr '[:upper:]' '[:lower:]')
-         docker_cmd "$@"
+         run_docker "$@"
          ;;
 
       clean)
          rm -rf $(cat etc/generated-artifacts | sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/ /g')
          ;;
 
-      upsub)
-         for tree in 'bin' 'etc' 'src/dev'; do
-            echo "Updating subtree $tree"
-            git subtree pull -P $tree ../uS-common $tree
-         done
+      up-master)
+         if [ -z "$1" ]; then
+            echo "up-master requires a subtree branch argument"
+            exit -1
+         fi
+         git fetch uS-common $1
+         cat .git/FETCH_HEAD
+         git merge -s subtree --squash --no-commit uS-common/${1}
+         git diff --staged --name-status
+         git stat
+         # Manually resolve conflicts, add & commit.
          ;;
 
-      usage)
-         echo 'Usage:'
-         echo '   run clean'
-         echo '   run upsub -- update git subtrees'
-         echo '   [BOOTSTRAP_SERVERS=ip:port] [nohup] run dev|prod [repl|nrepl|rebl|itest|jar|depstar|capsule|1jar] [&]'
-         echo '   run pkg [mvn|gradle|depstar|depstar-uber (uber only)|capsule (uber only)|1jar (uber only)]'
-         echo '   run docker build [mvn|gradle|depstar|capsule|1jar]|run [debug]|clean|ls|scrub'
+      up-sub)
+         if [ -z "$1" ]; then
+            echo "up-sub requires a subtree branch argument"
+            exit -1
+         fi
+         git checkout ${1}-branch
+         # Update with uS-common first.
+         git pull
+         git diff master:${1}
+         git merge -s subtree --squash --no-commit master
+         git diff --staged --name-status
+         git stat
+         git branch -av
+         # Manually resolve conflicts, add & commit. Then git push uS-common HEAD:refs/for/${1}
+         ;;
+
+      diff-sub)
+         echo "Local-master subtree differences:"
+         # git diff some-branch commit:some/path
+         echo "bin:"
+         git diff-tree --name-status bin-branch master:bin
+         echo "etc:"
+         git diff-tree --name-status etc-branch master:etc
+         echo "src/dev:"
+         git diff-tree -r --name-status src/dev-branch master:src/dev
+         # git diff remote/some-branch commit:some/path
+         echo "Remote-master subtree differences:"
+         git fetch uS-common
+         cat .git/FETCH_HEAD
+         echo "bin:"
+         git diff-tree --name-status uS-common/bin master:bin
+         echo "etc:"
+         git diff-tree --name-status uS-common/etc master:etc
+         echo "src/dev:"
+         git diff-tree -r --name-status uS-common/src/dev master:src/dev
          ;;
 
       *)
-         process usage
-         ;;
+         echo "Usage:"
+         echo "   run clean"
+         echo "   run up-sub subtree-branch   -- update a git subtree"
+         echo "   run diff-sub                -- show all subtree branch differences"
+         echo "   run compile                 -- compile modified namespaces"
+         echo "   run pkg [mvn|gradle|cambada|uberdeps|depstar|depstar-uber (uber only)|capsule (uber only)|1jar (uber only)]"
+         echo "   [BOOTSTRAP_SERVERS=ip:port] [nohup] run dev|prod [repl|nrepl|rebl|itest|jar|depstar|capsule|1jar] [2>&1 &]"
+         echo "   run docker build [mvn|gradle|depstar|capsule|1jar]|repackage|run [debug]|dcyaml|clean|ls|scrub"
    esac
 }
 
-#------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------
+function run_bld() {
+   bld=$1
+   shift
+   case "$bld" in
+      mvn)
+         # Remove dependencies on development jars
+         touch deps.edn
+         clojure -Sverbose -Spom "$@"
+         # 'auto merge' mvn plugins into the generated pom.xml. Only add clojure-maven-plugin xml when not present in pom.xml
+         grep -q '^[ \t]*<artifactId>clojure-maven-plugin</artifactId>' pom.xml || sed -i -e '/<sourceDirectory>src\/main\/clj<\/sourceDirectory>/r src/dev/mvn-plug-res.xml' pom.xml
+         [ -f pom.xml ] && rm pom.xml-e
+         mvn package
+         ;;
 
+      cambada)
+         set_jar_type ""
+         clj -A:uberjar --app-version ${REVISION} --out $JAR_DIR
+         ;;
+
+      depstar)
+         # No qualifer in the name. Meant as clj source based library jar.
+         clj -A:depstar -m hf.depstar.uberjar ${FQ_APP}
+         ;;
+
+      depstar-uber)
+         set_jar_type "ds"
+         clj -A:depstar -m hf.depstar.uberjar ${FQ_APP}
+         ;;
+
+      capsule))
+         set_jar_type "caps"
+         clj -A:pack mach.pack.alpha.capsule -m $MAIN_NS --application-id $APP --application-version $REVISION \
+            -M "Built-By: $USER" -M "Build-Timestamp: $(date)" -M "Build-Host: $(uname -vn)" ${FQ_APP}
+         ;;
+
+      1jar)
+         set_jar_type "1jar"
+         clj -A:pack mach.pack.alpha.one-jar ${FQ_APP}
+         ;;
+
+      gradle)
+         set_jar_type "jar"
+         # run gradle with the JDK selected by this script.
+         gradle -Dorg.gradle.java.home=$JAVA_HOME shadowJar
+         ;;
+
+      uberdeps)
+         clojure -Auberdeps --target "$JAR_DIR/$(cat .app-name)-$(git describe --tag --dirty)-ub.jar"
+         ;;
+
+      *)
+         set_jar_type ""; bin/pkg $MAIN_NS
+         ;;
+
+   esac
+}
+
+#-----------------------------------------------------------------------
+function run_docker() {
+   dkr_cmd=$1
+   shift
+   case "$dkr_cmd" in
+      run)
+         # Optionally publish uS ports with -p port:port/tcp
+         DOCKER_PARMS="--env-file ${DOCKER_ENV_FILE} --name ${APP} ${lc_app}:${REVISION}"
+         is_docker_env_file_set
+         docker stop ${APP}
+         docker rm ${APP}
+         if [ "$1" == "debug" ]; then
+            docker run -t -i --entrypoint /bin/sh $DOCKER_PARMS
+         else
+            docker run -d $DOCKER_PARMS
+         fi
+         run_docker ls
+         # after 'run docker run' completes, run 'docker attach some-id'. Use ^p^q to exit the container.
+         ;;
+
+      ls)
+         echo "Containers..."
+         docker ps -a --filter name=${APP}
+         echo ""
+         echo "Images..."
+         docker images | grep ${APP}
+         ;;
+
+      clean)
+         docker rm $(docker ps -aq --filter name=${APP})
+         docker rmi $(docker images | grep ${APP} | awk "{print \$3}")
+         run_docker ls
+         ;;
+
+      scrub)
+         run_docker clean
+         docker rmi $(docker images | grep '<none>' | awk "{print \$3}")
+         docker images
+         ;;
+
+      build)
+         run_docker clean
+         if [ -z ${1} ]; then
+            # Build a jar without tooling
+            run_pkg $MAIN_NS
+         else
+            # Build a jar with capsule, 1jar, depstar, mvn or gradle
+            run_pkg $1
+         fi
+         # run_cmd pkg above may change $REVISION, be sure to pick that up.
+         get_revision
+         docker build -t ${lc_app}:${REVISION} .
+         ;;
+
+      *)
+         run_cmd usage
+         ;;
+
+   esac
+}
+
+#-----------------------------------------------------------------------
+#
+#   MAIN
+#
+#-----------------------------------------------------------------------
 source etc/utils.shlib
 
 # If this script is sourced skip the rest and return
-[ "$0" = "${BASH_SOURCE[0]}" ] && v=run || return 0;
-
-# setting errtrace allows our ERR trap handler to be propagated to functions, expansions and subshells
-# trap ERR to provide an error handler whenever a command exits nonzero
-set -o errtrace
-trap stacktrace ERR
-trap stacktrace INT
-trap stacktrace PIPE 
-
-RUN="$0"
+[ "$0" = "$BASH_SOURCE" ] && v=run || return 0;
 
 # override maven output directory 'target' & gradle ouput directory 'build/libs'
-PKG_DIR=deploy
+JAR_DIR=deploy
 set_revision
 MAIN_NS=none
 
-#export CLJ=clj
-export CLJ='docker exec clojure lein'
-export DOCKER=docker
-#export DOCKER=docker exec docker docker
-export GRADLE=gradle
-#export GRADLE='docker exec gradle gradle'
-export JAVA=java
-#export JAVA='docker exec java java'
-export MVN=mvn
-#export MVN='docker exec maven mvn'
+jdk_ops='-J-XX:+IgnoreUnrecognizedVMOptions -J--add-modules=java.xml.bind,java.xml.ws'
 
-JDK_OPTS='-J-XX:+IgnoreUnrecognizedVMOptions -J--add-modules=java.xml.bind,java.xml.ws'
-
-process "$@"
+run_cmd "$@"

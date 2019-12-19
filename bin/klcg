@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-source "$(dirname $0)/validate-kafka-env"
+source $(dirname $0)/validate-kafka-env
 
-if [ "${kafka_home:-}" ]; then
-   cd "$kafka_home"
+if [ "$kafka_home" ]; then
+   cd ${kafka_home}
 
-   ./bin/kafka-consumer-groups.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --list
+   ./bin/kafka-consumer-groups.sh --bootstrap-server ${BOOTSTRAP_SERVERS} --list
 fi
 
 # vim: ft=sh

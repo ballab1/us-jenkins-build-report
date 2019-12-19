@@ -43,25 +43,25 @@ find . -type f -iname \*.sql -exec sed -E -i -e \
    "/^[ \t]*--/! s/([a-z])-([a-z])/\1_\2/g; /^[ \t]*-- :doc/ s/([a-z])-([a-z])/\1_\2/g; /c\.relname/ s/$from_us_lc/$to_us_lc/g" {} \;
 
 # Cleanup sed leftover backup files *-e
-find . -type f -name \*-e -delete
+find . -type f -name \*-e -exec rm {} \;
 
 # Rename FILES with the $from_us pattern.
 # Java requires underscores in filenames instead of -
 for file in $(find . -type f -iname \*$from_us\*); do
    echo "Renaming file $file to ${file/$from_us/$to_us}"
-   mv "$file" "${file/$from_us/$to_us}"
+   mv $file ${file/$from_us/$to_us}
 done
 
 # Rename DIRECTORIES with the $from_us pattern.
 # Java requires underscores in filenames instead of -
 for file in $(find . -type d -iname \*$from_us\*); do
    echo "Renaming directory $file to ${file/$from_us/$to_us}"
-   mv "$file" "${file/$from_us/$to_us}"
+   mv $file ${file/$from_us/$to_us}
 done
 
 # Rename files with the $from pattern.
 # e.g. SQL files.
 for file in $(find . -type f -iname \*$from\*); do
    echo "Renaming file $file to ${file/$from/$to}"
-   mv "$file" "${file/$from/$to}"
+   mv $file ${file/$from/$to}
 done

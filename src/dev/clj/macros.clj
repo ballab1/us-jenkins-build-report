@@ -60,10 +60,10 @@
 ;; http://brownsofa.org/blog/2014/08/03/debugging-in-clojure-tools
 (defmacro dlet [bindings & body]
   `(let [~@(mapcat (fn [[n v]]
-                       (if (or (vector? n) (map? n))
-                           [n v]
+                     (if (or (vector? n) (map? n))
+                       [n v]
                          ;[n v '_ `(println (name '~n) ":" ~v)]))
-                         [n v '_ `(js/console.info (str (name '~n) ":" ~v))]))
+                       [n v '_ `(js/console.info (str (name '~n) ":" ~v))]))
                    (partition 2 bindings))]
      ~@body))
 
@@ -79,4 +79,4 @@
             ~(second clauses))
        (throw (IllegalArgumentException.
                "cond requires an even number of forms")))
-     (cons 'dcond (next (next clauses))))))
+     (cons 'dcond (nnext clauses)))))

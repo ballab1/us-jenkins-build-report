@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
-if [ -z "${KAFKA_HOME:-}" ]; then
-   kafka_bin="$(find ~/tools/kafka_* -type d -name bin)"
-   if [ -z "${kafka_bin:-}" ]; then
+if [ -z ${KAFKA_HOME} ]; then
+   kafka_bin=$(find ~/tools/kafka_* -type d -name bin)
+   if [ -z ${kafka_bin} ]; then
       echo "Cannot find or set KAFKA_HOME"
       exit 1
    else
-      kafka_home="${kafka_bin%%/bin}"
+      kafka_home=${kafka_bin%%/bin}
    fi
 else
    kafka_home=${KAFKA_HOME}
 fi
 
-echo $(java -version)
+echo `java -version`
 case "$1" in
    0 ) export JMX_PORT=9992
       ;;
@@ -23,11 +23,11 @@ case "$1" in
 esac
 
 echo "Updating broker listener IP..."
-"$(dirname $0)/update-kafka-properties" $1
+$(dirname $0)/update-kafka-properties $1
 echo "JMX_PORT=$JMX_PORT"
-cd "$kafka_home"
-#./bin/kafka-server-start.sh -daemon "config/server-$1.properties"
-./bin/kafka-server-start.sh "./config/server-$1.properties"
+cd $kafka_home
+#./bin/kafka-server-start.sh -daemon config/server-$1.properties
+./bin/kafka-server-start.sh ./config/server-$1.properties
 cd -
 
 jps -lm

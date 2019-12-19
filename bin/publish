@@ -1,32 +1,71 @@
 #!/bin/bash
 
-# Ensure we are executing in the project directory.
-cd "$(dirname $0)/.."
+# BEFORE EXECUTING this script, create and 'chmod go-rwx'
+# ~/.artifactory-creds. This file will need to contain:
+# declare ARTIFACTORYUSER=your-art-login
+# declare ARTIFACTORYPASSWORD=your-art-password
 
-ORG_ID='org/ballab1'
-ARTIFACT_ID="$(< .app-name)"
-REVISION=$(< .revision)
+# Ensure we are executing in the project directory.
+cd $(dirname $0)/..
+
+ORG_ID="com/dell/spe/mres"
+ARTIFACT_ID="${PWD##*/}"
+REVISION="$(git describe --tag --dirty)"
 QUALIFIER=$2
 
-source_dir='deploy'
+#source_dir="deploy"
+source_dir="target/lib"
 sub_target="$ORG_ID/$ARTIFACT_ID/$REVISION/"
 
-if [ "${QUALIFIER:-} ]; then
+function publish_art()
+{
+    local file=$1
+    local -r target=$2
+
+    if [ `uname` = "Darwin" ]; then
+      local md5Value="$(md5 -q "$file")"
+      local sha1Value="$(shasum "$file")"
+    else
+      local md5Value="$(md5sum "$file")"
+      local sha1Value="$(sha1sum "$file")"
+    fi
+
+    md5Value="${md5Value:0:32}"
+    sha1Value="${sha1Value:0:40}"
+
+    local -r url="https://afeoscyc-mw.cec.lab.emc.com/artifactory/cyclone-devops-mw/$target"
+
+    echo "INFO: Uploading $file to $url"
+    curl -k -X PUT -u $ARTIFACTORYUSER:$ARTIFACTORYPASSWORD \
+         -H "X-Checksum-Md5: $md5Value" \
+         -H "X-Checksum-Sha1: $sha1Value" \
+         -T "$file" \
+         $url
+}
+
+if [ $QUALIFIER ]; then
    jar="$source_dir/$ARTIFACT_ID-$REVISION-$QUALIFIER.jar"
 else
    jar="$source_dir/$ARTIFACT_ID-$REVISION.jar"
 fi
 pom="$source_dir/$ARTIFACT_ID-$REVISION.pom"
 
-if [ "$1" == 'art' ]; then
-   :
-elif [ "$1" == 'local' ]; then
+if [ "$1" == "art" ]; then
+   source ~/.artifactory-creds
+   publish_art $jar $sub_target
+   publish_art $pom $sub_target
+elif [ "$1" == "local" ]; then
    target_dir="$HOME/.m2/repository/$sub_target"
-   mkdir -p "$target_dir"
-   cp "$jar" "$pom" "$target_dir"
+   mkdir -p $target_dir
+   cp $jar $pom $target_dir
    echo "Content of $target_dir:"
-   ls -latr "$target_dir"
+   ls -latr $target_dir
 else
    echo "Usage: $0 art|local [qualifier]"
-   echo
+   echo ""
 fi
+
+# To retrieve manually:
+#     curl -u corp-id https://afeoscyc-mw.cec.lab.emc.com/artifactory/cyclone-devops-mw/com/dell/spe/mres/uS-lib/0.0-5-g503e219/uS-lib-0.0-5-g503e219.jar -o some.jar
+#           OR
+#     curl -u corp-id:password https://afeoscyc-mw.cec.lab.emc.com/artifactory/cyclone-devops-mw/com/dell/spe/mres/uS-lib/0.0-5-g503e219/uS-lib-0.0-5-g503e219.jar -o some.jar

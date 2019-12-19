@@ -3,7 +3,7 @@
 usage() {
    echo "Find Kafka server-[0-9].properties file corresponding to broker-id and update 'listener' IP with host IP."
    echo "Usage: $0 broker-id"
-   echo
+   echo ""
 }
 
 if [ ! $# = 1 ]; then
@@ -16,28 +16,28 @@ fi
 # configuring Kafka. In addition, setting listeners to a FQ host name
 # may not resolve correctly when multicast DNS is used. So, when setting
 # the Kafka cluster to 'local' we need to derive the host ip 'manually'.
-if [ $(uname) = 'Linux' ]; then
+if [ `uname` = "Linux" ]; then
    export HOST_IF=$(ip route show | grep default | grep -Po 'dev \K[\w]+')
    export HOST_IP=$(ip addr show $HOST_IF | grep -Po 'inet \K[\d.]+')
 else
    # BSDs
-   GW_INFO=$(netstat -nr -f inet | grep default | sed -E 's/[ \t]+/ /g')
-   export DEF_GW=")echo ${GW_INFO} | cut -d \  -f 2)"
-   if [ $(uname) = "Darwin" ]; then
-      export HOST_IF=$(echo ${GW_INFO} | cut -d \  -f 6)
-   elif [ $(uname) = "FreeBSD" ]; then
-      export HOST_IF=$(echo ${GW_INFO} | cut -d \  -f 4)
+   GW_INFO=`netstat -nr -f inet | grep default | sed -E 's/[ \t]+/ /g'`
+   export DEF_GW="`echo ${GW_INFO} | cut -d \  -f 2`"
+   if [ `uname` = "Darwin" ]; then
+      export HOST_IF=`echo ${GW_INFO} | cut -d \  -f 6`
+   elif [ `uname` = "FreeBSD" ]; then
+      export HOST_IF=`echo ${GW_INFO} | cut -d \  -f 4`
    else
-      export HOST_IF="$(echo ${GW_INFO} | cut -d \  -f 8)"
+      export HOST_IF="`echo ${GW_INFO} | cut -d \  -f 8`"
    fi
-   export HOST_IP="$(/sbin/ifconfig ${HOST_IF} | grep -w inet | cut -d \  -f 2)"
+   export HOST_IP="`/sbin/ifconfig ${HOST_IF} | grep -w inet | cut -d \  -f 2`"
 fi
 
 echo "HOST_IP is $HOST_IP"
 
 # Find listener references and update with host's ip.
-cd "$(dirname $1)"
+cd $(dirname $1)
 find . -type f -iname server-$1.properties -exec sed -E -i -e "/^[ \t]*listeners=PLAINTEXT:\/\// s/[0-9]+.[0-9]+.[0-9]+.[0-9]+/$HOST_IP/g" {} \;
 
 # Cleanup sed leftover backup files *-e
-find . -type f -name \*-e -elete
+find . -type f -name \*-e -exec rm {} \;

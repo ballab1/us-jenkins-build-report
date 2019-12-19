@@ -4,7 +4,9 @@
 .classes
 .cpcache
 .gradle
+.jar-type
 .manifest
+.manifest_cp
 .nrepl-port
 .repl-port
 .revision

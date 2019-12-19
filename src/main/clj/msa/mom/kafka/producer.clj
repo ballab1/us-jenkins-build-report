@@ -1,10 +1,14 @@
 ;; https://techblog.roomkey.com/index.html
 ;; http://www.confluent.io/blog/tutorial-getting-started-with-the-new-apache-kafka-0.9-consumer-client
 (ns msa.mom.kafka.producer
+  {:clj-kondo/config
+   '{:linters {:unresolved-symbol {:exclude [(msa.mom.kafka.producer [kafka-producer])]}}}}
   (:require [cheshire.core :as json]
             [clojure.spec.alpha :as s]
+            [clojure.string :as str]
             [cognitect.transit :as transit]
             [config.env :as cfg]
+            [mount.core :as mount]
             [msgpack.core :as msg]
             [taoensso.nippy :as nippy]
             [timbre.appenders.bunyan :as log])
@@ -16,26 +20,22 @@
            (org.apache.kafka.common.serialization ByteArraySerializer))
   (:gen-class))
 
-;(def bootstrap-servers (or (System/getenv "BOOTSTRAP_SERVERS") "localhost:9092"))
-(def kafka-dev-mode (or (System/getenv "KAFKA_DEV_MODE") false))
-
 ; Default producer configuration for development/testing. Some env. variables can override.
 (def producer-base-cfg
-  {"bootstrap.servers" (cfg/bootstrap-servers)
-   ;"client.id" (str (.getHostName (InetAddress/getLocalHost)) ":" (cfg/client-id) ":prod")
-   "client.id" (cfg/client-id)
-   ;"api.version.request" true
-   "key.serializer" ByteArraySerializer
-   "value.serializer" ByteArraySerializer})
-
-(when (cfg/run-dev-mode)
-  (log/debug "Producer base configuration =>" producer-base-cfg))
+  (memoize
+   (fn []
+     {"bootstrap.servers" (cfg/bootstrap-servers)
+      ;"client.id" (str (.getHostName (InetAddress/getLocalHost)) ":" (cfg/client-id) ":prod")
+      "client.id" (cfg/client-id)
+      ;"api.version.request" true
+      "key.serializer" ByteArraySerializer
+      "value.serializer" ByteArraySerializer})))
 
 (defmulti send-msg
   "Producer functions to serialize a message and send to topic. All assume a
   map as message input. The message will be automatically enriched with the
   event time."
-  (fn [^KafkaProducer producer pd-map m]
+  (fn [^KafkaProducer _producer pd-map _m]
     (:msg-type pd-map)))
 
 (defmethod send-msg :json
@@ -80,7 +80,7 @@
   "Return a producer definition map setting a canonical client.id and other relevant
   configuration parameters like topic and message type."
   [msg-type topic-name & [options-map]]
-  (merge {:kafka-prod-cfg producer-base-cfg
+  (merge {:kafka-prod-cfg (producer-base-cfg)
           :topic-name topic-name
           :msg-type msg-type} (or options-map {})))
 
@@ -113,12 +113,17 @@
          "SPEC EXPLANATION:" spec-explanation)
         (publish-dlq-msg
          (assoc msg-map :spec-violation-explanation
-                (clojure.string/trim-newline spec-explanation)))))))
+                (str/trim-newline spec-explanation)))))))
 
 (def get-dlq-producer
   "Returns a memoized function of create-dlq-producer which in turn returns a
   closure with a closed KafkaProducer."
   (memoize create-dlq-producer))
+
+(mount/defstate kafka-producer
+  :start (when (cfg/run-dev-mode)
+           (log/debug "RUN_DEV_MODE =>" (cfg/run-dev-mode))
+           (log/debug "Producer base configuration =>" (producer-base-cfg))))
 
 (comment
   (require '(clojure [pprint :as cp]) ; cp/pprint
@@ -140,8 +145,8 @@
   (def publish-json-msg (create-msg-producer (define-producer :json
                                                (str (cfg/topic) "-test-json"))))
   (publish-json-msg (gen-json-msg))
-  (dotimes [n 3] (publish-json-msg (gen-json-msg)) (Thread/sleep 200))
-  (def f (future (dotimes [n 300] (publish-json-msg (gen-json-msg)) (Thread/sleep 1000))))
+  (dotimes [_n 3] (publish-json-msg (gen-json-msg)) (Thread/sleep 200))
+  (def f (future (dotimes [_n 300] (publish-json-msg (gen-json-msg)) (Thread/sleep 1000))))
 
   (def publish-transitj-msg (create-msg-producer
                              (define-producer :transit (str (cfg/topic) "-test-transit-json")

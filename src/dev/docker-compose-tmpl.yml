@@ -1,0 +1,15 @@
+version: "2"
+services:
+  *APP-NAME*:
+    image: *APP-NAME*:*VERSION*
+    ports:
+     - "8889:8889"
+    environment:
+     - BOOTSTRAP_SERVERS=10.207.136.76:9092,10.207.136.76:9093,10.207.136.76:9094
+     #- BOOTSTRAP_SERVERS=kafkabroker01.cec.lab.emc.com:9092,kafkabroker02.cec.lab.emc.com:9092,kafkabroker03.cec.lab.emc.com:9092
+     #- TOPIC=cyclonecommon-github-events
+    logging:
+      #driver: json-file
+      options:
+         max-file: "5"
+         max-size: "10m"

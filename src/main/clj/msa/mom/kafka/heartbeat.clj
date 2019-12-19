@@ -2,7 +2,6 @@
   "heartbeat core"
   (:require [clojure.core.async :as async]
             [config.env :as cfg]
-            [msa.mom.kafka.consumer :refer [consumer-base-cfg]]
             [msa.mom.kafka.producer :refer [create-msg-producer
                                             define-producer]]
             [timbre.appenders.bunyan :as log])
@@ -46,14 +45,14 @@
    (long (or heartbeat-interval-ms 120000)))
   ; map instance
   #_{:uuid (str (.generate UUIDv1))
-   :sequence_id (or  n 0)
-   :timestamp (str (java.time.Instant/now))
-   :hostname (str (java.net.InetAddress/getLocalHost))
-   :host_ips (local-addresses)
-   :kafka_client_id (cfg/client-id)
-   :kafka_group_id (cfg/group-id)
-   :topics [(cfg/topic) (cfh/hb-topic)]
-   :next_heartbeat_in_ms (or heartbeat-interval-ms 120000)})
+     :sequence_id (or  n 0)
+     :timestamp (str (java.time.Instant/now))
+     :hostname (str (java.net.InetAddress/getLocalHost))
+     :host_ips (local-addresses)
+     :kafka_client_id (cfg/client-id)
+     :kafka_group_id (cfg/group-id)
+     :topics [(cfg/topic) (cfh/hb-topic)]
+     :next_heartbeat_in_ms (or heartbeat-interval-ms 120000)})
 
 (defn update-hb-msg [hb-msg n]
   ; Records are immutable, assoc returns a new instance with updated fields.

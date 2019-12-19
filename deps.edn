@@ -9,43 +9,53 @@
 ;; For all attributes other than :paths, these config files are merged left to right.
 ;; Only the last :paths is kept and others are dropped.
 
-{
-  ;; Paths
+{;; Paths
   ;;   Directories in the current project to include in the classpath
-  :paths ["src/main/clj" "src/main/cljs" "src/resources"]
+ :paths ["src/main/clj" "src/main/cljs" "src/resources"]
 
-  ;; External dependencies
-  :deps {
-    org.clojure/clojure {:mvn/version "1.9.0" :classifier "slim"}
-    org.clojure/core.async {:mvn/version "0.4.474"}  ; CSP
-    org.clojure/test.check {:mvn/version "0.9.0"}
-    com.taoensso/timbre {:mvn/version "4.10.0"}
+ ;; External dependencies
+ :deps
+ {org.clojure/core.async {:mvn/version "0.6.532" :exclusions [org.clojure/clojure]}  ; CSP
 
-    ;; Data manipulation/compression
-    cheshire {:mvn/version "5.8.1"}
-    clojure-msgpack {:mvn/version "1.2.1"}
-    com.taoensso/nippy {:mvn/version "2.14.0"}
-    com.cognitect/transit-clj {:mvn/version "0.8.313"}
-    com.fasterxml.uuid/java-uuid-generator {:mvn/version "3.1.5"}
+  ; src/main/clj/specs/internet.clj use generators in specs.
+  org.clojure/test.check {:mvn/version "0.10.0" :exclusions [org.clojure/clojure]}
+  com.taoensso/timbre {:mvn/version "4.10.0" :exclusions [org.clojure/clojure]}
 
-    ;; For using a Java interface to kafka
-    ;; https://techblog.roomkey.com/index.html
-    org.apache.kafka/kafka-clients {:mvn/version "2.0.0"}
-    ;org.apache.kafka/kafka-streams {:mvn/version "2.0.0"}
+  ;; Data manipulation/compression
+  cheshire {:mvn/version "5.9.0" :exclusions [org.clojure/clojure]}
+  clojure-msgpack {:mvn/version "1.2.1" :exclusions [org.clojure/clojure]}
+  com.taoensso/nippy {:mvn/version "2.14.0" :exclusions [org.clojure/clojure net.jpountz.lz4/lz4]}
+  com.cognitect/transit-clj {:mvn/version "0.8.319"}
+  com.fasterxml.uuid/java-uuid-generator {:mvn/version "3.2.0"}
+  com.cemerick/url {:mvn/version "0.1.1"}
 
-    ;; Environment & component config
-    aero {:mvn/version "1.1.3"}
-    mount {:mvn/version "0.1.13"}
+  ;; For using a Java interface to kafka
+  ;; https://techblog.roomkey.com/index.html
+  org.apache.kafka/kafka-clients {:mvn/version "2.4.0"}
+  ;org.apache.kafka/kafka-streams {:mvn/version "2.4.0"}
 
-    ;; Database
-    org.clojure/java.jdbc {:mvn/version "0.7.8"}
-    com.zaxxer/HikariCP {:mvn/version "3.2.0"}
-    com.layerware/hugsql {:mvn/version "0.4.9"}
-    ; https://github.com/pgjdbc/pgjdbc
-    ; https://jdbc.postgresql.org/download.html
-    ; See maven pom file. Supports JDBC 4.2 and jre8+
-    org.postgresql/postgresql {:mvn/version "42.2.5"}
-  }
+  ;; Environment & component config
+  aero {:mvn/version "1.1.3"}
+  mount {:mvn/version "0.1.16"}
+
+  ;; Logging
+  ; Have SLF4J delegate to timbre
+  ;com.fzakaria/slf4j-timbre {:mvn/version "0.3.14" :exclusions [org.clojure/clojure com.taoensso/timbre org.slf4j/impl org.slf4j/slf4j-nop]}
+  ; Make sure all other logging APIs are wrapped by SLF4J by including:
+  org.slf4j/slf4j-nop {:mvn/version "1.7.29"}      ; http://www.slf4j.org/codes.html#StaticLoggerBinder
+  org.slf4j/jul-to-slf4j {:mvn/version "1.7.29"}
+  org.slf4j/jcl-over-slf4j {:mvn/version "1.7.29"}
+  org.slf4j/log4j-over-slf4j {:mvn/version "1.7.29"}
+
+  ;; Database
+  seancorfield/next.jdbc {:mvn/version "1.0.12" :exclusions [org.clojure/clojure]}
+  com.zaxxer/HikariCP {:mvn/version "3.4.1"}
+  com.layerware/hugsql {:mvn/version "0.5.1" :exclusions [org.clojure/clojure]}
+  com.layerware/hugsql-adapter-next-jdbc {:mvn/version "0.5.1"}
+  ; https://github.com/pgjdbc/pgjdbc
+  ; https://jdbc.postgresql.org/download.html
+  ; See maven pom file. Supports JDBC 4.2 and jre8+
+  org.postgresql/postgresql {:mvn/version "42.2.9"}}
   ;; Aliases
 	;;   resolve-deps aliases (-R) affect dependency resolution, options:
 	;;     :extra-deps - specifies extra deps to add to :deps
@@ -59,19 +69,67 @@
   ;;   :deps {:extra-deps {org.clojure/tools.deps.alpha {:mvn/version "0.2.196"}}}
   ;;   :test {:extra-paths {"src/test/clj"}}
   ;; }
-  :aliases {
-    :test {:extra-paths ["src/test/clj"]}
-    :pack {:extra-deps {pack/pack.alpha {:git/url "https://github.com/juxt/pack.alpha.git"
-                                         :sha "d16bb29fa1581519c2659aed3c94e9a22a0329b8"}}
-           :main-opts ["-m"]}
-    :depstar {:extra-deps
-                 {com.healthfinch/depstar {:git/url "https://github.com/healthfinch/depstar.git"
-                                           :sha "68f3a04f75c988fa032974e8c600c9086812e9ef"}}}
-  }
+ :aliases
+ {:deps {:extra-deps {org.clojure/tools.deps.alpha {:mvn/version "0.8.599"}}}
+  :test {:extra-paths ["src/test/clj"]}
 
-  ;; Provider attributes
-  :mvn/repos {
-     "central" {:url "https://repo1.maven.org/maven2/"}
-     "clojars" {:url "https://clojars.org/repo"}
-  }
-}
+  ; Explicitly call "static code analysis" tools from cli instead from vim
+  :eastwood {:main-opts ["-m" "eastwood.lint" "{:source-paths,[\"src/main/clj\"]}"]
+             :extra-deps {jonase/eastwood {:mvn/version "0.3.6"}}}
+
+  :kondo {:extra-deps {clj-kondo {:mvn/version "RELEASE"}}
+          :main-opts ["-m" "clj-kondo.main" "--lint" "src/main/clj"]}
+
+  :yagni {:extra-deps {venantius/yagni {:mvn/version "0.1.7"}}
+          :main-opts ["-e" "(require,'[yagni.core,:as,y]),(y/run-yagni,{:source-paths,[\"src/main/clj\"],:main,'msa.core})"]}
+
+  :kibit {:extra-deps {jonase/kibit {:mvn/version "0.1.8"}}
+          :main-opts ["-e" "(require,'[kibit.driver,:as,d]),(d/external-run,[\"src\"],nil)"]}
+
+  ; Build: clj -A:uberjar --app-version $(git describe --tag --dirty)
+  ; Run: -jar target/uS-base-0.0-20-g50863b1-dirty-standalone.jar | bunyan
+  :uberjar ^:depot/ignore {:extra-deps {com.dell.spe.mres/cambada {:mvn/version "1.0.2g-2-g3829e20"}}
+                           :main-opts ["-m" "cambada.uberjar" "-a" "config.env:manifest.core:msa.db.pg:msa.mom.kafka.consumer:msa.mom.kafka.heartbeat:msa.mom.kafka.producer:specs.common:specs.internet:timbre.appenders.bunyan" "-r" "src/resources"]}
+
+  :jar ^:depot/ignore {:extra-deps {com.dell.spe.mres/cambada {:mvn/version "1.0.2g-2-g3829e20"}}
+                       :main-opts ["-m" "cambada.jar" "-a" "config.env:manifest.core:msa.db.pg:msa.mom.kafka.consumer:msa.mom.kafka.heartbeat:msa.mom.kafka.producer:specs.common:specs.internet:timbre.appenders.bunyan" "-r" "src/resources"]}
+
+  ; Run: java -cp target/<project>.jar clojure.main -m <namespace with main>
+  :uberdeps {:extra-deps {uberdeps {:mvn/version "0.1.6"}}
+             :main-opts ["-m" "uberdeps.uberjar"]}
+
+  ; Custom build using clojure: https://cjohansen.no/clojure-in-production-tools-deps
+  ; Build: clojure -A:badigeon [-m package]
+  ; Run: java $JAVA_OPTS -cp 'target/classes:target/lib:target/lib/lib/*' msa.core
+  :badigeon {:extra-paths ["src/dev/build"] ; Be sure to: git pull --recurse-submodules
+             :extra-deps {badigeon/badigeon {:git/url "https://github.com/EwenG/badigeon.git"
+                                             :sha "bdb5b5de74448303772d391b8a84b2b154d6f6ff"
+                                             :tag "0.0.10"}
+                          org.clojure/tools.namespace {:mvn/version "0.3.1"}}
+             :main-opts ["-m" "package"]}
+
+  ; Test coverage
+  :cloverage {:extra-deps {cloverage {:mvn/version "1.1.2"}}
+              :main-opts ["-m" "cloverage.coverage"]}
+
+  ; Check source formatting
+  :fmt {:extra-deps {com.jameslaverack/cljfmt-runner
+                     {:git/url "https://github.com/JamesLaverack/cljfmt-runner"
+                      :sha "6383fbb0bd22a21c0edf5b699425504d9f0a958a"}}
+        :main-opts ["-m" "cljfmt-runner.check"]}
+
+  ; To fix formatting run: clj -Afmt:fmt/fix
+  :fmt/fix {:main-opts ["-m" "cljfmt-runner.fix"]}
+
+  ; Vulnerabilities scanner
+  :nvd {:extra-deps {nvd-clojure {:mvn/version "1.3.1"}}
+        :main-opts ["-m" "nvd.task.check" "nvd.json"]}
+
+  ; List outdated dependencies
+  :outdated {:extra-deps {olical/depot {:mvn/version "1.8.4"}}
+             :main-opts ["-m" "depot.outdated.main"]}}
+
+ ;; Provider attributes
+ :mvn/repos
+ {"MavenCentral" {:url "https://repo1.maven.org/maven2/"}
+  "clojars" {:url "https://clojars.org/repo"}}}

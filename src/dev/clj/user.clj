@@ -35,8 +35,8 @@
   references with vim-fireplace 'K'."
   []
   #_(alter-var-root
-   #'clojure.java.javadoc/*feeling-lucky*
-   (constantly true))
+     #'clojure.java.javadoc/*feeling-lucky*
+     (constantly true))
 
   (alter-var-root
    #'clojure.java.javadoc/*core-java-api*
@@ -65,7 +65,7 @@
           "org.apache.commons.lang3." "http://commons.apache.org/proper/commons-lang/javadocs/api-release/"))))
 
   (jd/add-remote-javadoc "com.fasterxml.uuid."
-     "http://cowtowncoder.github.io/java-uuid-generator/javadoc/3.1.3/")
+                         "http://cowtowncoder.github.io/java-uuid-generator/javadoc/3.1.3/")
   (jd/add-remote-javadoc "com.zaxxer.hikari." "http://static.javadoc.io/com.zaxxer/HikariCP/3.2.0/")
   (jd/add-remote-javadoc "org.apache.kafka." "https://kafka.apache.org/20/javadoc/index.html?")
   (jd/add-remote-javadoc "org.postgresql." "https://jdbc.postgresql.org/documentation/publicapi/"))

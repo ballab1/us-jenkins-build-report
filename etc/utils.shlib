@@ -1,82 +1,41 @@
 #! /bin/echo Please-source
 
-#------------------------------------------------------------------------------------------
-function gen_proj_pom() {
-   cat << EOF  > "${FQ_APP_NS}.pom"
-<project>
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.ballab1</groupId>
-  <artifactId>${APP}</artifactId>
-  <version>${REVISION}</version>
-</project>
-EOF
-}
-
-#------------------------------------------------------------------------------------------
-function get_revision() {
-   REVISION="$(< .revision)"
-   APP="$(< .app-name)"
-   FQ_APP_NS="${PKG_DIR}/${APP}-${REVISION}"
-   FQ_APP="${FQ_APP_NS}.jar"
-   FQ_DS_APP="${FQ_APP_NS}-ds.jar"
-   FQ_CAPS_APP="${FQ_APP_NS}-caps.jar"
-   FQ_1JAR_APP="${FQ_APP_NS}-1jar.jar"
-}
-
-#------------------------------------------------------------------------------------------
-function is_docker_env_file_set() {
-   if [ -z "${DOCKER_ENV_FILE:-}" ]; then
-      echo "Please set DOCKER_ENV_FILE environment variable before invoking \"./run docker run\" command."
-      echo "  e.g.: export DOCKER_ENV_FILE=~/.docker-env (chmod go-rwx)"
-      exit -1
-   fi
-}
-
-#------------------------------------------------------------------------------------------
 function jenv() {
-   uname="$(uname)"
-   if [ "$uname" = 'Darwin' ] || [ "$uname" = 'Linux' ]; then
-      open_jdk_home="$(find ~/tools/jdk-* -type d -name bin 2>/dev/null ||:)"
-
-      if [ "$uname" = 'Darwin' ]; then
-         graal_home="$(find ~/tools/graalvm-ce-* -type d -name Home 2>/dev/null ||:)"
+   uname=$(uname)
+   if [ $uname = "Darwin" ] || [ $uname = "Linux" ]; then
+      open_jdk_home=$(find ~/tools/jdk-* -type d -name bin 2>/dev/null)
+      if [ $uname = "Darwin" ]; then
+         graal_home=$(find ~/tools/graalvm-ce-* -type d -name Home 2>/dev/null)
       else
-         graal_home="$(find ~/tools/graalvm-ce-* -type d -name jre 2>/dev/null ||:)"
+         graal_home=$(find ~/tools/graalvm-ce-* -type d -name jre 2>/dev/null)
       fi
-
-      if [ "${graal_home:-}" ] && [ "$1" = 'graal' ]; then
-         PATH="${graal_home}/bin:$PATH"
-         JAVA_HOME="$graal_home"
-
-      elif [ "${open_jdk_home:-}" ] && [ "$1" = 'ojdk' ]; then
-         JAVA_HOME="$(dirname $open_jdk_home)"
-         PATH="$JAVA_HOME/bin:$PATH"
-
-      elif [ "$uname" = 'Darwin' ]; then
-         JAVA_HOME="$(/usr/libexec/java_home -v "$uname")"
-
-      elif [ "$uname" = 'Linux' ]; then
-         sys_java="$(readlink -f "$(which java)")"
-         JAVA_HOME="${sys_java%/bin/java}"
+      if [ $graal_home ] && [ $1 = "graal" ]; then
+         PATH=$graal_home/bin:$PATH
+         JAVA_HOME=$graal_home
+      elif [ $open_jdk_home ] && [ $1 = "ojdk" ]; then
+         JAVA_HOME=$(dirname $open_jdk_home)
+         PATH=$JAVA_HOME/bin:$PATH
+      elif [ $uname = "Darwin" ]; then
+         JAVA_HOME=`/usr/libexec/java_home -v $1`
+      elif [ $uname = "Linux" ]; then
+         sys_java=$(readlink -f $(which java))
+         JAVA_HOME=${sys_java%/bin/java}
       fi
-
-   elif [ "$uname" = 'FreeBSD' ]; then
+   elif [ `uname` = "FreeBSD" ]; then
       JAVA_VERSION=1.8
    fi
 }
 
-#------------------------------------------------------------------------------------------
 # 'brew install coreutils' on OSX.
 function random_unused_port {
-   uname="$(uname)"
-   if [ "$uname" = 'Darwin' ]; then
+   if [ `uname` = "Darwin" ]; then
       shuffle=gshuf
       ns_options='-f inet -p tcp'
    else
       shuffle=shuf
       ns_options='-t'
    fi
-   if [ "$uname" = 'FreeBSD' ]; then
+   if [ `uname` = "FreeBSD" ]; then
       ns_options='-f inet -p tcp'
    fi
    (netstat -lan $ns_options |
@@ -85,74 +44,188 @@ function random_unused_port {
     ) | sort -n | uniq -u | $shuffle -n 2
  }
 
-#------------------------------------------------------------------------------------------
-function set_kafka_cluster() {
-   if [ -z "${KAFKA_IP:-}" ]; then
-      source bin/set-kafka-cluster "$1"
-   else
-      source bin/set-kafka-cluster host "$KAFKA_IP"
-   fi
-}
-
-#------------------------------------------------------------------------------------------
 function set_repl_ports() {
    # turn string into an array using \n as a delimiter
-   OPEN_PORTS=( $(random_unused_port) )
+   OPEN_PORTS=($(random_unused_port))
    # export for init-cider.clj
-   export NREPL_PORT="${OPEN_PORTS[0]}"
-   REPL_PORT="${OPEN_PORTS[1]}"
+   export NREPL_PORT=${OPEN_PORTS[0]}
+   REPL_PORT=${OPEN_PORTS[1]}
    echo $NREPL_PORT > .nrepl-port  # vim-fireplace
    echo $REPL_PORT > .repl-port    # repl
 }
 
-#------------------------------------------------------------------------------------------
+function gen_proj_pom() {
+   echo \
+"<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.dell.spe.mres</groupId>
+  <artifactId>$APP</artifactId>
+  <version>$REVISION</version>
+</project>" > ${FQ_APP_NS}.pom
+}
+
 function set_revision() {
    # Only change revision if we have git available.
    # Assume no git available in a container.
    # Container will have .revision & .app-name copied in.
-   if type -p 'git' > /dev/null; then
+   if type -p "git" > /dev/null; then
       git describe --tags --dirty > .revision
       # If git exited with an issue create a tag automatically
       if [ $? != 0 ]; then
          if [ -d .git ]; then
-            echo "Auto creating tag v0.0 on first commit."
+            echo "Auto creating tag 0.0 on first commit."
             # If multiple SHAs (submodule|subtree) assume last SHA is initial commit
-            git tag v0.0 "$(git rev-list --max-parents=0 HEAD | tail -n 1)"
+            git tag 0.0 $(git rev-list --max-parents=0 HEAD | tail -n 1)
             # Try again
             set_revision
          else
-            echo 'No git repository, revision set to 'No-Git'!'
-            echo 'No-Git' > .revision
+            echo "No git repository, revision set to 'No-Git'!"
+            echo "No-Git" > .revision
          fi
       fi
-      APP="${PWD##*/}"
-      echo "$APP" > .app-name
+      APP=${PWD##*/}
+      echo ${APP} > .app-name
    fi
    get_revision
 }
 
-#------------------------------------------------------------------------------------------
-# display stacktrace
-function stacktrace()
-{
-    [[ ${trap_dying:-0} -ne 0 || ${trap_pipe_error:-0} -ne 0 ]] && return 0
-
-    set +o nounset
-    set +o verbose
-    set +o xtrace
-
-    echo >&2
-    printf '\x1b[31m%s\x1b[0m\n' ">>>    Current directory $(pwd)" >&2
-    # Print out the stack trace described by $function_stack
-    if [ ${#FUNCNAME[@]} -gt 2 ]; then
-        printf '\x1b[31m%s\x1b[0m\n' 'Stack trace:' >&2
-        for ((i=1;i<${#FUNCNAME[@]}-1;i++)); do
-            printf '\x1b[31m%s\x1b[0m\n' "$(printf '>>>    %02d: %s %s  <<<' "$i" "${BASH_SOURCE[$i+1]}:${BASH_LINENO[$i]}" "${FUNCNAME[$i]}" )" >&2
-        done
-    fi
-    exit 1
+function get_revision() {
+   REVISION=$(cat .revision)
+   APP=$(cat .app-name)
+   APP_NS="${APP}-${REVISION}"
+   FQ_APP_NS="${JAR_DIR}/${APP}-${REVISION}"
 }
 
-#------------------------------------------------------------------------------------------
+function set_jar_type() {
+   echo "$1" > .jar-type
+   if [ -z "$1" ]; then
+      FQ_APP="${FQ_APP_NS}.jar"
+      DEPLOY_ME="java -jar ${FQ_APP}"
+   else
+      FQ_APP="${FQ_APP_NS}-$1.jar"
+      if [ "$1" = "caps" ]; then
+         DEPLOY_ME="java -jar ${FQ_APP}"
+      elif [ "$1" = "1jar" ]; then
+         DEPLOY_ME="java -jar ${FQ_APP} -m ${MAIN_NS}"
+      elif [ "$1" = "ds" ]; then
+         DEPLOY_ME="java -cp ${FQ_APP} clojure.main -m ${MAIN_NS}"
+      fi
+   fi
+}
+
+function set_kafka_cluster() {
+   if [ -z ${KAFKA_IP} ]; then
+      source bin/set-kafka-cluster $1
+   else
+      source bin/set-kafka-cluster host $KAFKA_IP
+   fi
+}
+
+function is_docker_env_file_set() {
+   if [ ! $DOCKER_ENV_FILE ]; then
+      echo "Please set DOCKER_ENV_FILE environment variable before invoking \"./run docker run\" command."
+      echo "  e.g.: export DOCKER_ENV_FILE=~/.docker-env (chmod go-rwx)"
+      exit -1
+   fi
+}
+
+function extract_dependencies() {
+   # Find all jar files on the classpath and decompress them along side the
+   # project's compiled classes. WARNING the last class decompressed overwrites
+   # a previous version upon collision. Reverse process the list to match what a
+   # classloader would see.
+   manifest_cp=()
+   files=(${1//:/ })
+   cd $deps_dir;
+   for (( i=${#files[@]}-1;i>=0;i-- )); do
+      file=${files[i]}
+      if [ -f $file ]; then
+         echo "Extracting: $file into $deps_dir"
+         manifest_cp+=" ${file##*/} \n"
+         jar xf $file
+      fi
+   done
+   sorted_manifest_cp=$(printf "$manifest_cp" | sort)
+   cd $OLDPWD
+   echo "$sorted_manifest_cp" > .manifest_cp
+}
+
+function create_manifest() {
+   # Create a manifest file
+   manifest=.manifest
+   echo "Title: $(cat .app-name)" > $manifest
+   echo "SCM-Revision: $(cat .revision)" >> $manifest
+   echo "SCM-SHA: $(git rev-parse HEAD)" >> $manifest
+   echo "SCM-Location: $(grep -m1 url .git/config | sed -E 's/^[ \t]+//g' | cut -d ' ' -f 3)" >> $manifest
+   echo "Built-By: $USER" >> $manifest
+   echo "Build-Timestamp: $(date)" >> $manifest
+   echo "Build-Host: $(uname -vn)" >> $manifest
+   echo "Built-With: $0" >> $manifest
+   echo "Main-Class: ${MAIN_NS//-/_}" >> $manifest
+   echo "Class-Path: $(cat .manifest_cp)" >> $manifest
+}
+
+function package() {
+   # Remove any file in $classes_dir coming from the decompressed jars that is also
+   # in src/resources as the latter will need to override these in the uber jar.
+   for file in $(ls src/resources); do
+      find $classes_dir -type f -name $file -exec rm {} \;
+   done
+
+   # Create the project's uberjar including project class files, resources and jar class files.
+   [ -d $JAR_DIR ] || mkdir -p $JAR_DIR
+   jar_name="$JAR_DIR/$(cat .app-name)-$(cat .revision).jar"
+
+   # Only package when jar is out of date wrt class files or does not exist
+   # find .classes -type f -newer $jar_name
+   if [ -f $jar_name ]; then
+      new_classes=$(find $classes_dir -type f -newer $jar_name)
+   fi
+   if [ ! -z "$new_classes" ] || [ ! -f $jar_name ]; then
+      echo "Creating $jar_name"
+      jar cmf $manifest $jar_name -C src/resources . -C $classes_dir .
+   else
+      echo "$jar_name is up to date"
+   fi
+}
+
+function find_project_namespaces() {
+   # Get the project's namespaces
+   local namespaces=()
+   for file in $(find src/main/clj -name \*.clj); do
+      drop_front=${file##src/main/clj/}
+      drop_extension=${drop_front%%.clj}
+      [ -d ${classes_dir} ] || mkdir -p $classes_dir
+      # Only add file when its source is newer than its .class counter part
+      if [[ "src/main/clj/${drop_extension}.clj" -nt "${classes_dir}/${drop_extension}.class" ]]; then
+         from_underscore_to_dash=${drop_extension//_/-}
+         namespaces+="${from_underscore_to_dash//\//.} "
+      fi
+   done
+   echo $namespaces
+}
+
+function compile() {
+   # echo "PWD is $PWD"
+   # Improve by compiling only changed *.clj files
+   # find src -newer .classes -type f -iname \*.clj
+
+   # Compile the project's namespaces like msa.core. WARNING compiled project
+   # classes will overwrite decompressed jars classes upon collision.
+   echo "namespaces to compile=$(find_project_namespaces)"
+   java -cp $classes_dir:$deps_dir:$1 -Dclojure.compile.path=$classes_dir clojure.lang.Compile $(find_project_namespaces)
+}
+
+function compile_and_package() {
+   printf "MAIN_NS=$MAIN_NS\nJAR_DIR=$JAR_DIR\n"
+   # Get the project's classpath
+   local cpath=$(clj -Spath -Srepro)
+
+   compile $cpath
+   create_manifest
+   package
+   rm -rf pom.xml
+   clj -Spom
+}
 
 # vim: set ft=sh ts=3 sts=3 sw=3 tw=78 et:

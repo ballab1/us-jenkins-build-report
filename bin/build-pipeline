@@ -1,0 +1,13 @@
+revision=$(git describe --tag --dirty)
+app=${PWD##*/}
+target="target/lib/$app-$revision"
+
+# Jenkins like pipeline
+clojure -Sverbose -Aeastwood
+clojure -Auberjar --app-version "$revision" --out "target/lib"
+clojure -Auberdeps --target "$target-debug.jar"
+clojure -Acloverage -p src/main/clj -t src/test/clj
+clojure -Afmt
+clojure -Aoutdated
+mvn install:install-file -Dfile="$target-debug.jar" -DgroupId=com.dell.spe.mres -DartifactId="$app" -Dversion="$revision" -Dpackaging=jar
+mvn install:install-file -Dfile="$target.jar" -DgroupId=com.dell.spe.mres -DartifactId="$app" -Dversion="$revision" -Dpackaging=jar

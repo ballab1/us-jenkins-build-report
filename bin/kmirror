@@ -3,12 +3,12 @@
 usage() {
    echo "Clone a topic from the production cluster to a local development cluster"
    echo "Usage: $0 topic-name"
-   echo
+   echo ""
 }
 
 if [ $# -eq 1 ]; then
    # See: https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=27846330
-   "$KAFKA_HOME/bin/kafka-mirror-maker.sh" --consumer.config "$(dirname $0)/../etc/sourceClusterConsumer.config" --producer.config "$(dirname $0)/../etc/targetClusterProducer.config" --whitelist $1
+   $KAFKA_HOME/bin/kafka-mirror-maker.sh --consumer.config $(dirname $0)/../etc/sourceClusterConsumer.config --producer.config $(dirname $0)/../etc/targetClusterProducer.config --whitelist $1
 else
    usage
    exit -1

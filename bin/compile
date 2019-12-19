@@ -1,0 +1,23 @@
+# https://stackoverflow.com/questions/29011295/compile-clojure-source-into-class-aot-from-command-line-not-using-lein
+
+# Ensure we are executing in the project directory.
+cd $(dirname $0)/..
+
+proj_dir=$PWD
+source etc/utils.shlib
+set_revision
+
+# Prepare env
+cd $proj_dir
+target_dir=$proj_dir/target
+classes_dir=$target_dir/.classes
+
+if [ -z ${JAR_DIR} ]; then
+  JAR_DIR=$target_dir/lib
+fi
+
+if [ -z ${MAIN_NS} ]; then
+  MAIN_NS=$1
+fi
+
+compile $(clj -Spath)

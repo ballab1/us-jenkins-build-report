@@ -1,21 +1,45 @@
 #!/usr/bin/env bash
 
-source "$(dirname $0)/validate-kafka-env"
+source $(dirname $0)/validate-kafka-env
 
-if [ "${kafka_home:-}" ]; then
-   cd "$kafka_home"
+if [ "$kafka_home" ]; then
+   cd ${kafka_home}
    if [ $# -eq 1 ]; then
       topic=$1
+   elif [ $# -eq 2 ]; then
+      topic=$1
+      requested_offset=$2
    else
       echo "Missing topic name!"
       exit 1
    fi
 
-   if [ "${BOOTSTRAP_SERVERS:-}" ]; then
-      ./bin/kafka-console-consumer.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --topic ${topic} --from-beginning | jq . -C -
+   if [ ${BOOTSTRAP_SERVERS} ]; then
+      if [ $# -eq 1 ]; then
+         ./bin/kafka-console-consumer.sh --bootstrap-server ${BOOTSTRAP_SERVERS} --topic ${topic} --from-beginning | jq . -C -
+      # $2 is the provided offset
+      else
+         topic_parition_offset=$(./bin/kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list ${BOOTSTRAP_SERVERS} --topic ${topic})
+         if [ ! -z "$topic_parition_offset" ]; then
+            IFS=':'
+            array=( $topic_parition_offset )
+            echo "topic = ${array[0]}"
+            echo "partition = ${array[1]}"
+            echo "current offset = ${array[2]}"
+            # E.g. offset of -100 means last 100 messages.
+            if [ "$requested_offset" -lt "0" ]; then
+               offset=$(( ${array[2]} + $requested_offset ))
+            else
+               offset=$requested_offset
+            fi
+            partition=${array[1]}
+            echo "process offset = $offset"
+            ./bin/kafka-console-consumer.sh --bootstrap-server "${BOOTSTRAP_SERVERS}" --topic "${topic}" --offset "${offset}" --partition "${partition}" | jq . -C -
+         fi
+      fi
    else
-      ./bin/kafka-console-consumer.sh --zookeeper "$ZK_HOSTS" --topic "$topic" --from-beginning | jq . -C -M -
-   fi    
+      ./bin/kafka-console-consumer.sh --zookeeper ${ZK_HOSTS} --topic ${topic} --from-beginning | jq . -C -M -
+   fi
 fi
 
 # vim: ft=sh

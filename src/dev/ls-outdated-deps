@@ -1,0 +1,1 @@
+clojure -J-Dlog.level=INFO -Sverbose -Aoutdated -a outdated,find-deps,test,dev,nrepl,nrepl/old,pack,depstar,new,rebl,rebl8,standalone,proto,comp,rebel-clj,rebel-cljs,eastwood,kibit,uberdeps,jar,uberjar,cbuild,liquid -t qualified,release "$@"
