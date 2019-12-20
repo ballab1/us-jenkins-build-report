@@ -226,13 +226,13 @@ function compile() {
 function compile_and_package() {
    printf "MAIN_NS=$MAIN_NS\nJAR_DIR=$JAR_DIR\n"
    # Get the project's classpath
-   local cpath=$(clj -Spath -Srepro)
+   local cpath=$(clojure -Spath -Srepro)
 
    compile $cpath
    create_manifest
    package
    rm -rf pom.xml
-   clj -Spom
+   clojure -Spom
 }
 
 # vim: set ft=sh ts=3 sts=3 sw=3 tw=78 et:
